@@ -1,0 +1,25 @@
+LogEntry = EventGroup
+
+EventGroup = {
+  context: ContextID
+  start: time
+  end: time
+  events: [+ Event]
+}
+
+Event = NewContext / Data
+
+ContextID = bstr .size 16
+
+NewContext = {
+  NewContext: {
+    parent: ContextID
+  }
+}
+
+Data = {
+  Data: {
+    key: tstr
+    value: uint .size 8 / tstr / bstr
+  }
+}

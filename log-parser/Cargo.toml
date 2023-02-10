@@ -1,0 +1,17 @@
+[package]
+name = "crypto-auditing-log-parser"
+description = "Event log parser for crypto-auditing project"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+authors = ["The crypto-auditing developers"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4", features=["derive"] }
+crypto-auditing-types = { path = "../types" }
+hex = "0.4"
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_cbor = "0.10"
+serde_json = "1.0"
+serde_with = { version = "2.2", features = ["hex"] }

@@ -1,0 +1,3 @@
+[workspace]
+
+members = ["agent", "log-parser", "types"]
