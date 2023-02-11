@@ -1,0 +1,37 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  static:
+    name: Static code checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+
+  build:
+    name: Fedora tests
+    runs-on: ubuntu-latest
+    container:
+      image: registry.fedoraproject.org/fedora:37
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install dependencies
+      run: dnf install -y cargo clang clippy kernel-devel libbpf-devel llvm-devel rustfmt
+    - name: Copy vmlinux.h
+      run: cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/src/bpf
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Run clippy
+      run: cargo clippy
