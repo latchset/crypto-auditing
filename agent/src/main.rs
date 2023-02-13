@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(link) = prog.attach_usdt(
             -1, // any process
             library,
-            "audit",
+            "crypto_auditing",
             "new_context",
         ) {
             links.push(link);
@@ -90,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(link) = prog.attach_usdt(
             -1, // any process
             library,
-            "audit",
+            "crypto_auditing",
             "word_data",
         ) {
             links.push(link);
@@ -99,7 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(link) = prog.attach_usdt(
             -1, // any process
             library,
-            "audit",
+            "crypto_auditing",
             "string_data",
         ) {
             links.push(link);
@@ -108,7 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(link) = prog.attach_usdt(
             -1, // any process
             library,
-            "audit",
+            "crypto_auditing",
             "blob_data",
         ) {
             links.push(link);
