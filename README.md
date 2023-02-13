@@ -46,14 +46,14 @@ $ sudo make install
 
 1. Compile the target crypto library with defined tracepoints are enabled
 ```console
-$ git clone --depth=1 -b wip/dueno/usdt https://gitlab.com/dueno/gnutls.git
+$ git clone --depth=1 -b wip/usdt https://gitlab.com/gnutls/gnutls.git
 $ ./bootstrap
 $ ./configure
 $ make -j$(nproc)
 ```
 2. Run the agent as root
 ```console
-$ sudo ./target/debug/crypto-auditing-agent --library .../gnutls/lib/.libs/libgnutls.so.30.34.2
+$ sudo ./target/debug/crypto-auditing-agent --library .../gnutls/lib/.libs/libgnutls.so.30.35.0
 ```
 3. On another terminal, run any commands using the instrumented library
 ```console
