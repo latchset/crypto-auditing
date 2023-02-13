@@ -38,41 +38,41 @@ probes as follows:
 
 ```c
 /* Introduce a new context CONTEXT, derived from PARENT */
-# define AUDIT_NEW_CONTEXT(context, parent)				\
-	DTRACE_PROBE2(audit, new_context, context, parent)
+# define CRYPTO_AUDITING_NEW_CONTEXT(context, parent)				\
+	DTRACE_PROBE2(crypto_auditing, new_context, context, parent)
 
 /* Assert an event with KEY and VALUE. The key is treated as a
  * NUL-terminated string, while the value is in the size of machine
  * word
  */
-# define AUDIT_WORD_DATA(context, key_ptr, value_ptr)			\
-	DTRACE_PROBE3(audit, word_data, context, key_ptr, value_ptr)
+# define CRYPTO_AUDITING_WORD_DATA(context, key_ptr, value_ptr)			\
+	DTRACE_PROBE3(crypto_auditing, word_data, context, key_ptr, value_ptr)
 
 /* Assert an event with KEY and VALUE. Both the key and value are
  * treated as a NUL-terminated string
  */
-# define AUDIT_STRING_DATA(context, key_ptr, value_ptr)			\
-	DTRACE_PROBE3(audit, string_data, context, key_ptr, value_ptr)
+# define CRYPTO_AUDITING_STRING_DATA(context, key_ptr, value_ptr)			\
+	DTRACE_PROBE3(crypto_auditing, string_data, context, key_ptr, value_ptr)
 
 /* Assert an event with KEY and VALUE. The key is treated as a
  * NUL-terminated string, while the value is explicitly sized with
  * VALUE_SIZE
  */
-# define AUDIT_BLOB_DATA(key_ptr, context, value_ptr, value_size)	\
-	DTRACE_PROBE4(audit, blob_data, context, key_ptr, value_ptr, value_size)
+# define CRYPTO_AUDITING_BLOB_DATA(key_ptr, context, value_ptr, value_size)	\
+	DTRACE_PROBE4(crypto_auditing, blob_data, context, key_ptr, value_ptr, value_size)
 ```
 
 These macros can be invoked in the application logic:
 
 ```c
 /* Start TLS client handshake */
-AUDIT_NEW_CONTEXT(context, NULL);
+CRYPTO_AUDITING_NEW_CONTEXT(context, NULL);
 
 /* Indicate that this context is about TLS client handshake */
-AUDIT_STRING_DATA(context, "name", "tls::handshake_client");
+CRYPTO_AUDITING_STRING_DATA(context, "name", "tls::handshake_client");
 
 /* Indicate that TLS 1.3 is selected */
-AUDIT_WORD_DATA(context, "tls::protocol_version", 0x0304);
+CRYPTO_AUDITING_WORD_DATA(context, "tls::protocol_version", 0x0304);
 ```
 
 where `context` can be any object with the size of a machine word
@@ -105,8 +105,8 @@ overhead, we may consider using integer codepoints instead.
 #### Using implementation specific probe points
 
 Instead of using a key-value based event description, it is possible
-to define probe points that directly corresponds to certain
-implementation.  The following is an attempt along these lines,
+to define probe points that directly corresponds to particular
+implementation detail.  The following is an attempt along these lines,
 assuming internal algorithm identifiers used in GnuTLS:
 
 ```c
