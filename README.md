@@ -72,83 +72,87 @@ CBOR objects, which can be parsed and printed as a tree with the
 $ cargo run --bin crypto-auditing-log-parser audit.cborseq
 [
   {
-    "context": "66cbb84ee07b90427845ee3d1ae087ba",
+    "context": "33acb8e6ccc65bb285bd2f84cac3bf80",
+    "start": 49431626623324,
+    "end": 49431626623324,
     "events": {
       "name": "tls::handshake_client",
       "tls::ciphersuite": 4866,
       "tls::protocol_version": 772
     },
-    "map": [
-      [
-        "cc337d853f445ad282f4f2a0aec310d8",
-        {
-          "context": "cc337d853f445ad282f4f2a0aec310d8",
-          "events": {
-            "name": "tls::certificate_verify",
-            "tls::signature_algorithm": 2057
-          }
+    "spans": [
+      {
+        "context": "cdbaebffb957deffec8664b52ab8290d",
+        "start": 49431631956782,
+        "end": 49431631963209,
+        "events": {
+          "name": "tls::certificate_verify",
+          "tls::signature_algorithm": 2057
         }
-      ]
+      }
     ]
   },
   {
-    "context": "2b87eeaf728e24e17ddb8de38d9a7925",
+    "context": "c8e0a865bab48563e70780234c3de1c0",
+    "start": 49431626833778,
+    "end": 49431627033707,
     "events": {
       "name": "tls::handshake_server",
       "tls::ciphersuite": 4866,
       "tls::protocol_version": 772
     },
-    "map": [
-      [
-        "33650fafec0364c22fa284cbe9c5b809",
-        {
-          "context": "33650fafec0364c22fa284cbe9c5b809",
-          "events": {
-            "name": "tls::certificate_verify",
-            "tls::signature_algorithm": 2057
-          }
+    "spans": [
+      {
+        "context": "3c062a160cc8bc8113d05eff4ffc5da5",
+        "start": 49431628203429,
+        "end": 49431628207396,
+        "events": {
+          "name": "tls::certificate_verify",
+          "tls::signature_algorithm": 2057
         }
-      ]
+      }
     ]
   },
   {
-    "context": "56ef62bf96e87513e789538e9b880826",
+    "context": "953c66fdd64be71bf99ccc4b91298c95",
+    "start": 49434502888728,
+    "end": 49434502888728,
     "events": {
       "name": "tls::handshake_client",
       "tls::ciphersuite": 49200,
       "tls::protocol_version": 771
     },
-    "map": [
-      [
-        "7bcae3d1a6058293dd634220b266827f",
-        {
-          "context": "7bcae3d1a6058293dd634220b266827f",
-          "events": {
-            "name": "tls::certificate_verify",
-            "tls::signature_algorithm": 2057
-          }
+    "spans": [
+      {
+        "context": "d5ba85329440a679aece93ef63322753",
+        "start": 49434509684783,
+        "end": 49434509694813,
+        "events": {
+          "name": "tls::certificate_verify",
+          "tls::signature_algorithm": 2057
         }
-      ]
+      }
     ]
   },
   {
-    "context": "2b87eeaf728e24e17ddb8de38d9a7925",
+    "context": "c8e0a865bab48563e70780234c3de1c0",
+    "start": 49434503007039,
+    "end": 49434503047270,
     "events": {
       "name": "tls::handshake_server",
       "tls::ciphersuite": 49200,
       "tls::protocol_version": 771
     },
-    "map": [
-      [
-        "0c6044428c70bc8678c5035d9a2eed37",
-        {
-          "context": "0c6044428c70bc8678c5035d9a2eed37",
-          "events": {
-            "name": "tls::certificate_verify",
-            "tls::signature_algorithm": 2057
-          }
+    "spans": [
+      {
+        "context": "983d47ffeaf4b50691c80f2431c6b539",
+        "start": 49434503929186,
+        "end": 49434503940540,
+        "events": {
+          "name": "tls::certificate_verify",
+          "tls::signature_algorithm": 2057
         }
-      ]
+      }
     ]
   }
 ]

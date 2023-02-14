@@ -4,14 +4,27 @@
 use anyhow::{Context as _, Result};
 use clap::Parser;
 use crypto_auditing_types::{ContextID, Event, EventData, EventGroup};
+use serde::ser::{SerializeSeq, Serializer};
 use serde::Serialize;
 use serde_cbor::de::Deserializer;
-use serde_with::{hex::Hex, serde_as, Seq};
+use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
+
+fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+    V: Serialize,
+{
+    let mut seq = serializer.serialize_seq(Some(source.len()))?;
+    for value in source.values() {
+        seq.serialize_element(value)?;
+    }
+    seq.end()
+}
 
 #[serde_as]
 #[derive(Default, Serialize)]
@@ -24,8 +37,8 @@ struct Context {
     end: Duration,
     events: BTreeMap<String, EventData>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    #[serde_as(as = "Seq<(Hex, _)>")]
-    map: BTreeMap<ContextID, Rc<RefCell<Context>>>,
+    #[serde(serialize_with = "only_values")]
+    spans: BTreeMap<ContextID, Rc<RefCell<Context>>>,
 }
 
 #[derive(Parser)]
@@ -58,7 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(parent) = all_contexts.get(&parent_context[..]) {
                         parent
                             .borrow_mut()
-                            .map
+                            .spans
                             .insert(*group.context(), context.clone());
                     } else {
                         root_contexts.push(context.clone());
