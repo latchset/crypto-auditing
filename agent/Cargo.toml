@@ -12,7 +12,8 @@ bytes = "1.2"
 clap = { version = "4", features=["cargo", "derive"] }
 crypto-auditing-types = { path = "../types" }
 futures = "0.3"
-libbpf-rs = { git = "https://github.com/ueno/libbpf-rs.git", branch = "wip/usdt", features=["novendor"] }
+# The "novendor" feature currently requires libbpf-sys to be pulled in from the same repository
+libbpf-rs = { git = "https://github.com/libbpf/libbpf-rs.git", rev = "7c9b754e396e89fc8a9129809f769d212f09e30f", features=["novendor"] }
 libc = "0.2"
 nix = "0.24"
 openssl = "0.10"
@@ -25,4 +26,5 @@ tokio-uring = "0.4"
 toml = "0.6"
 
 [build-dependencies]
-libbpf-cargo = { git = "https://github.com/ueno/libbpf-rs.git", branch = "wip/usdt", features=["novendor"] }
+# The "novendor" feature currently requires libbpf-sys to be pulled in from the same repository
+libbpf-cargo = { git = "https://github.com/libbpf/libbpf-rs.git", rev = "7c9b754e396e89fc8a9129809f769d212f09e30f", features=["novendor"] }
