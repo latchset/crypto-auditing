@@ -10,6 +10,7 @@ use tokio::io::unix::AsyncFd;
 use tokio::io::{AsyncRead, ReadBuf};
 
 const BPF_RINGBUF_BUSY_BIT: u32 = 1 << 31;
+const BPF_RINGBUF_DISCARD_BIT: u32 = 1 << 30;
 const BPF_RINGBUF_HDR_SZ: u32 = 8;
 
 pub struct RingBuffer {
@@ -57,7 +58,7 @@ impl RingBuffer {
             async_fd: AsyncFd::with_interest(map.fd(), tokio::io::Interest::READABLE).unwrap(),
             consumer,
             producer,
-            data: unsafe { producer.offset(psize as isize) },
+            data: unsafe { producer.add(psize) },
         }
     }
 
@@ -99,23 +100,16 @@ impl AsyncRead for RingBuffer {
 
                 if (len & BPF_RINGBUF_BUSY_BIT) == 0 {
                     cons_pos += RingBuffer::roundup_len(len) as u64;
-                    let sample = unsafe {
-                        std::slice::from_raw_parts_mut(
-                            len_ptr.offset(BPF_RINGBUF_HDR_SZ as isize) as *mut u8,
-                            len as usize,
-                        )
-                    };
-                    unsafe {
-                        let b = &mut *(buf.unfilled_mut() as *mut [std::mem::MaybeUninit<u8>]
-                            as *mut [u8]);
+                    if (len & BPF_RINGBUF_DISCARD_BIT) == 0 {
+                        let sample = unsafe {
+                            std::slice::from_raw_parts_mut(
+                                len_ptr.offset(BPF_RINGBUF_HDR_SZ as isize) as *mut u8,
+                                len as usize,
+                            )
+                        };
                         len = std::cmp::min(len, buf.capacity() as u32);
-                        for i in 0..len {
-                            b[i as usize] = sample[i as usize];
-                        }
-                        buf.assume_init(len as usize);
-                        buf.advance(len as usize);
+                        buf.put_slice(&sample[..len as usize]);
                     }
-
                     std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
                     unsafe {
                         std::ptr::write_volatile(
@@ -123,7 +117,11 @@ impl AsyncRead for RingBuffer {
                             cons_pos,
                         )
                     };
-                    return Poll::Ready(Ok(()));
+                    if (len & BPF_RINGBUF_DISCARD_BIT) == 0 {
+                        return Poll::Ready(Ok(()));
+                    } else {
+                        continue;
+                    }
                 }
             }
             let mut ev = futures::ready!(self.async_fd.poll_read_ready(cx))?;
