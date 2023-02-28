@@ -272,3 +272,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_cbor::de::Deserializer;
+    use std::path::Path;
+
+    #[test]
+    fn test_normal() {
+        let fixtures_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join("fixtures")
+            .join("normal");
+
+        let input_file_path = fixtures_path.join("input.cborseq");
+        let input_file = std::fs::File::open(&input_file_path).expect("unable to open input file");
+
+        let mut output = Vec::new();
+        for res in
+            Deserializer::from_reader(&input_file).into_iter::<(Duration, Vec<u8>, Vec<u8>)>()
+        {
+            let (_duration, encryption_key, buffer) = res.expect("unable to deserialize trace");
+            let mut group = types::EventGroup::from_bytes(&buffer)
+                .expect("unable to deserialize to types::EventGroup");
+            group
+                .encrypt_context(|context: &mut types::ContextID| {
+                    *context = encrypt_context(&encryption_key[..], context)?;
+                    Ok(())
+                })
+                .expect("unable to encrypt context");
+            let mut v = serde_cbor::ser::to_vec(&group).expect("unable to serialize to CBOR");
+            output.append(&mut v);
+        }
+
+        let output_file_path = fixtures_path.join("output.cborseq");
+        let expected = std::fs::read(&output_file_path).expect("unable to read output file");
+        assert_eq!(expected, output);
+    }
+}
