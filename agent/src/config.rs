@@ -38,6 +38,9 @@ pub struct Config {
 
     /// Maximum number of events to be written to a file
     pub max_events: Option<usize>,
+
+    /// Path to debug trace file
+    pub trace_file: Option<PathBuf>,
 }
 
 impl Default for Config {
@@ -49,6 +52,7 @@ impl Default for Config {
             format: Format::Normal,
             coalesce_window: None,
             max_events: None,
+            trace_file: None,
         }
     }
 }
@@ -118,6 +122,13 @@ impl Config {
                 )
                 .required(false)
                 .value_parser(value_parser!(usize)),
+            )
+            .arg(
+                arg!(
+                    --"trace-file" <FILE> "Path to debug trace file"
+                )
+                .required(false)
+                .value_parser(value_parser!(PathBuf)),
             )
             .get_matches();
 
@@ -205,6 +216,15 @@ impl Config {
 
         if let Some(ValueSource::CommandLine) = matches.value_source("max-events") {
             self.max_events = matches.try_get_one::<usize>("max-events")?.copied();
+        }
+
+        if let Some(ValueSource::CommandLine) = matches.value_source("trace-file") {
+            self.trace_file = Some(
+                matches
+                    .try_get_one::<PathBuf>("trace-file")?
+                    .unwrap()
+                    .clone(),
+            );
         }
 
         Ok(())

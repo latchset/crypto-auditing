@@ -8,6 +8,7 @@ use openssl::{
     symm::{Cipher, Crypter, Mode},
 };
 use serde_cbor::{ser::IoWrite, Serializer};
+use std::io::prelude::*;
 use std::path::PathBuf;
 use time::{macros::format_description, OffsetDateTime};
 use tokio::io::AsyncReadExt;
@@ -64,8 +65,17 @@ fn encrypt_context(key: impl AsRef<[u8]>, context: &types::ContextID) -> Result<
     Ok(ciphertext.try_into().unwrap())
 }
 
+fn open_tracer(config: &config::Config) -> Result<Box<dyn std::io::Write>> {
+    if let Some(trace_file) = &config.trace_file {
+        Ok(Box::new(std::fs::File::create(trace_file)?))
+    } else {
+        Ok(Box::new(std::io::sink()))
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
+    let mut tracer = open_tracer(&config)?;
 
     bump_memlock_rlimit()?;
 
@@ -155,6 +165,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Successfully waited
             if let Ok(res) = res {
+                let trace = serde_cbor::ser::to_vec(&(
+                    instant.elapsed(),
+                    &encryption_key,
+                    &buffer.as_ref().to_vec(),
+                ))?;
+                let _ = tracer.write(&trace)?;
+                tracer.flush()?;
+
                 let n = res?;
                 if n == 0 {
                     break;
