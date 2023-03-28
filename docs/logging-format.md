@@ -216,14 +216,17 @@ The context names are defined as follows:
 | `tls::handshake_server`   | TLS handshake for server                                         |
 | `tls::certificate_sign`   | Digital signature is created using certificate in TLS handshake  |
 | `tls::certificate_verify` | Digital signature is verified using certificate in TLS handshake |
+| `tls::key_exchange`       | Shared secret derivation in TLS handshake                        |
 
 ##### TLS keys
 
-| key                        | value type | description                                                     |
-|----------------------------|------------|-----------------------------------------------------------------|
-| `tls::protocol_version`    | uint16     | Negotiated TLS version                                          |
-| `tls::ciphersuite`         | uint16     | Negotiated ciphersuite (as in IANA [registry][iana-tls-ciphersuites])                    |
-| `tls::signature_algorithm` | uint16     | Signature algorithm used in the handshake (as in IANA [registry][iana-tls-signature-algorithms]) |
+| key                           | value type | description                                                                                      |
+|-------------------------------|------------|--------------------------------------------------------------------------------------------------|
+| `tls::protocol_version`       | uint16     | Negotiated TLS version                                                                           |
+| `tls::ciphersuite`            | uint16     | Negotiated ciphersuite (as in IANA [registry][iana-tls-ciphersuites])                            |
+| `tls::signature_algorithm`    | uint16     | Signature algorithm used in the handshake (as in IANA [registry][iana-tls-signature-algorithms]) |
+| `tls::key_exchange_algorithm` | uint16     | Key exchange mode: ECDHE(0), DHE(1), PSK(2), ECDHE-PSK(3), DHE-PSK(4)                            |
+| `tls::group`                  | uint16     | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups])                  |
 
 ### CBOR based logging format definition
 
