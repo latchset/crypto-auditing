@@ -210,11 +210,12 @@ and TLS probe points.
 
 The context names are defined as follows:
 
-| name                      | description                                       |
-|---------------------------|---------------------------------------------------|
-| `tls::handshake_client`   | TLS handshake for client                          |
-| `tls::handshake_server`   | TLS handshake for server                          |
-| `tls::certificate_verify` | Certificate based authentication in TLS handshake |
+| name                      | description                                                      |
+|---------------------------|------------------------------------------------------------------|
+| `tls::handshake_client`   | TLS handshake for client                                         |
+| `tls::handshake_server`   | TLS handshake for server                                         |
+| `tls::certificate_sign`   | Digital signature is created using certificate in TLS handshake  |
+| `tls::certificate_verify` | Digital signature is verified using certificate in TLS handshake |
 
 ##### TLS keys
 
