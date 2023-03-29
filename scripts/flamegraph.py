@@ -48,6 +48,14 @@ PROTOCOLS = {
     0x0304: "TLS 1.3",
 }
 
+KX = {
+    0: "ECDHE",
+    1: "DHE",
+    2: "PSK",
+    3: "ECDHE-PSK",
+    4: "DHE-PSK",
+}
+
 class FlameGraphCLI:
     def __init__(self, args):
         self.args = args
@@ -71,6 +79,14 @@ class FlameGraphCLI:
                 m = re.match(r"0x([0-9a-fA-F]{4})", row["Value"])
                 if m:
                     self.signature_schemes[int(m.group(1), 16)] = d
+        self.groups = {}
+        with open(os.path.join(base, "tls-parameters-8.csv")) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                d = row["Description"]
+                m = re.match(r"^([0-9]+)$", row["Value"])
+                if m:
+                    self.groups[int(m.group(1))] = d
 
         if self.args.format == "html" and \
                 not os.path.isfile(self.args.template):
@@ -100,9 +116,17 @@ class FlameGraphCLI:
                 details.append(PROTOCOLS.get(events["tls::protocol_version"], "unknown version"))
             if "tls::ciphersuite" in events:
                 details.append(self.ciphersuites.get(events["tls::ciphersuite"], "unknown ciphersuite"))
-        elif name == "tls::certificate_verify":
+        elif name.startswith("tls::certificate_"):
             if "tls::signature_algorithm" in events:
                 details.append(self.signature_schemes.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
+        elif name.startswith("tls::certificate_"):
+            if "tls::signature_algorithm" in events:
+                details.append(self.signature_schemes.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
+        elif name == "tls::key_exchange":
+            if "tls::key_exchange_algorithm" in events:
+                details.append(KX.get(events["tls::key_exchange_algorithm"], "unknown algorithm"))
+            if "tls::group" in events:
+                details.append(self.groups.get(events["tls::group"], "unknown group"))
 
         return ', '.join(details)
 

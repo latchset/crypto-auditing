@@ -288,4 +288,5 @@ represented as a monotonic duration from the kernel boot time.
 [CDDL]: https://www.rfc-editor.org/rfc/rfc8610
 [iana-tls-ciphersuites]: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-4
 [iana-tls-signature-algorithms]: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-16
+[iana-tls-supported-groups]: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-8
 [rn-enc]: https://www.rfc-editor.org/rfc/rfc9147.html#name-record-number-encryption
