@@ -23,6 +23,11 @@ import subprocess
 import csv
 import re
 
+base = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(base)
+
+from tables import CIPHERSUITES, SIGNATURE_SCHEMES, SUPPORTED_GROUPS
+
 # pylint: disable=too-few-public-methods
 class Node:
     def __init__(self, name, libtype):
@@ -61,33 +66,6 @@ class FlameGraphCLI:
         self.args = args
         self.stack = Node("all", "root")
 
-        base = os.path.dirname(os.path.realpath(__file__))
-        self.ciphersuites = {}
-        with open(os.path.join(base, "tls-parameters-4.csv")) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                d = row["Description"]
-                if d.startswith("TLS_"):
-                    m = re.match(r"0x([0-9a-fA-F]{2}),0x([0-9a-fA-F]{2})", row["Value"])
-                    if m:
-                        self.ciphersuites[int(m.group(1), 16) << 8 | int(m.group(2), 16)] = d
-        self.signature_schemes = {}
-        with open(os.path.join(base, "tls-signaturescheme.csv")) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                d = row["Description"]
-                m = re.match(r"0x([0-9a-fA-F]{4})", row["Value"])
-                if m:
-                    self.signature_schemes[int(m.group(1), 16)] = d
-        self.groups = {}
-        with open(os.path.join(base, "tls-parameters-8.csv")) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                d = row["Description"]
-                m = re.match(r"^([0-9]+)$", row["Value"])
-                if m:
-                    self.groups[int(m.group(1))] = d
-
         if self.args.format == "html" and \
                 not os.path.isfile(self.args.template):
             print("Flame Graph template {} does not exist. Please install "
@@ -115,18 +93,18 @@ class FlameGraphCLI:
             if "tls::protocol_version" in events:
                 details.append(PROTOCOLS.get(events["tls::protocol_version"], "unknown version"))
             if "tls::ciphersuite" in events:
-                details.append(self.ciphersuites.get(events["tls::ciphersuite"], "unknown ciphersuite"))
+                details.append(CIPHERSUITES.get(events["tls::ciphersuite"], "unknown ciphersuite"))
         elif name.startswith("tls::certificate_"):
             if "tls::signature_algorithm" in events:
-                details.append(self.signature_schemes.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
+                details.append(SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
         elif name.startswith("tls::certificate_"):
             if "tls::signature_algorithm" in events:
-                details.append(self.signature_schemes.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
+                details.append(SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
         elif name == "tls::key_exchange":
             if "tls::key_exchange_algorithm" in events:
                 details.append(KX.get(events["tls::key_exchange_algorithm"], "unknown algorithm"))
             if "tls::group" in events:
-                details.append(self.groups.get(events["tls::group"], "unknown group"))
+                details.append(SUPPORTED_GROUPS.get(events["tls::group"], "unknown group"))
 
         return ', '.join(details)
 
