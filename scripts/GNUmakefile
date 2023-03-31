@@ -5,8 +5,8 @@ all: tables.py
 $(CSV):
 	wget https://www.iana.org/assignments/tls-parameters/$@
 
-tables.py: tls-parameters-4.csv tls-signaturescheme.csv tls-parameters-8.csv
-	python gen-tables.py \
+tables.py: gen_tables.py tls-parameters-4.csv tls-signaturescheme.csv tls-parameters-8.csv
+	python gen_tables.py \
 		--ciphersuites tls-parameters-4.csv \
 		--signature-schemes tls-signaturescheme.csv \
 		--supported-groups tls-parameters-8.csv \
