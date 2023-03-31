@@ -3,16 +3,31 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2023 The crypto-auditing developers.
 
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=C0103
+
 import argparse
 import csv
+import pprint
 import re
 import sys
 
-def format_dict(d, hex=True):
-    output = []
-    for (k, v) in d.items():
-        output.append(f'    0x{format(k, "x")}: "{v}"')
-    return "{\n" + ",\n".join(output) + "\n}"
+PROTOCOLS = {
+    0x0301: "TLS 1.0",
+    0x0302: "TLS 1.1",
+    0x0303: "TLS 1.2",
+    0x0304: "TLS 1.3",
+}
+
+KX = {
+    0: "ECDHE",
+    1: "DHE",
+    2: "PSK",
+    3: "ECDHE-PSK",
+    4: "DHE-PSK",
+}
+
 
 def gen(args):
     ciphersuites = {}
@@ -44,16 +59,31 @@ def gen(args):
         m = re.match(r"^([0-9]+)$", row["Value"])
         if m:
             supported_groups[int(m.group(1))] = d
+    pp = pprint.PrettyPrinter(indent=4)
     return f"""\
-CIPHERSUITES = {format_dict(ciphersuites)}
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2023 The crypto-auditing developers.
 
-SIGNATURE_SCHEMES = {format_dict(signature_schemes)}
+# DO NOT EDIT! GENERATED AUTOMATICALLY!
 
-SUPPORTED_GROUPS = {format_dict(supported_groups, hex=False)}
+# pylint: disable=missing-module-docstring
+
+PROTOCOLS = {pp.pformat(PROTOCOLS)}
+
+KX = {pp.pformat(KX)}
+
+CIPHERSUITES = {pp.pformat(ciphersuites)}
+
+SIGNATURE_SCHEMES = {pp.pformat(signature_schemes)}
+
+SUPPORTED_GROUPS = {pp.pformat(supported_groups)}\
 """
-    
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create tables for flame graphs.")
+    parser = argparse.ArgumentParser(
+        description="Create tables for flame graphs."
+    )
     parser.add_argument("--ciphersuites",
                         type=argparse.FileType('r'))
     parser.add_argument("--signature-schemes",
@@ -64,7 +94,6 @@ if __name__ == "__main__":
                         help="output file name",
                         type=argparse.FileType('w'),
                         default=sys.stdout)
-    
-    args = parser.parse_args()
-    print(gen(args), file=args.output)
 
+    cli_args = parser.parse_args()
+    print(gen(cli_args), file=cli_args.output)

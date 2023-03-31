@@ -6,7 +6,8 @@
 #     cargo run --bin crypto-auditing-log-parser audit.cborseq > audit.json
 #     python flamegraph.py audit.json
 #
-# Based on perf script flamegraph written by Andreas Gerstmayr <agerstmayr@redhat.com>.
+# Based on perf script flamegraph written by
+# Andreas Gerstmayr <agerstmayr@redhat.com>.
 #
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
@@ -16,17 +17,11 @@ from __future__ import print_function
 import sys
 import os
 import io
-import os
 import argparse
 import json
-import subprocess
-import csv
-import re
+from tables import CIPHERSUITES, KX, PROTOCOLS, SIGNATURE_SCHEMES, \
+    SUPPORTED_GROUPS
 
-base = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(base)
-
-from tables import CIPHERSUITES, SIGNATURE_SCHEMES, SUPPORTED_GROUPS
 
 # pylint: disable=too-few-public-methods
 class Node:
@@ -46,20 +41,6 @@ class Node:
             "c": self.children
         }
 
-PROTOCOLS = {
-    0x0301: "TLS 1.0",
-    0x0302: "TLS 1.1",
-    0x0303: "TLS 1.2",
-    0x0304: "TLS 1.3",
-}
-
-KX = {
-    0: "ECDHE",
-    1: "DHE",
-    2: "PSK",
-    3: "ECDHE-PSK",
-    4: "DHE-PSK",
-}
 
 class FlameGraphCLI:
     def __init__(self, args):
@@ -68,11 +49,12 @@ class FlameGraphCLI:
 
         if self.args.format == "html" and \
                 not os.path.isfile(self.args.template):
-            print("Flame Graph template {} does not exist. Please install "
-                  "the js-d3-flame-graph (RPM) or libjs-d3-flame-graph (deb) "
-                  "package, specify an existing flame graph template "
-                  "(--template PATH) or another output format "
-                  "(--format FORMAT).".format(self.args.template),
+            print(f"""\
+Flame Graph template {self.args.template} does not exist.
+Please install the js-d3-flame-graph (RPM) or libjs-d3-flame-graph (deb)
+package, specify an existing flame graph template
+(--template PATH) or another output format
+(--format FORMAT).""",
                   file=sys.stderr)
             sys.exit(1)
 
@@ -91,26 +73,33 @@ class FlameGraphCLI:
 
         if name.startswith("tls::handshake_"):
             if "tls::protocol_version" in events:
-                details.append(PROTOCOLS.get(events["tls::protocol_version"], "unknown version"))
+                details.append(PROTOCOLS.get(events["tls::protocol_version"],
+                                             "unknown version"))
             if "tls::ciphersuite" in events:
-                details.append(CIPHERSUITES.get(events["tls::ciphersuite"], "unknown ciphersuite"))
+                details.append(CIPHERSUITES.get(events["tls::ciphersuite"],
+                                                "unknown ciphersuite"))
         elif name.startswith("tls::certificate_"):
             if "tls::signature_algorithm" in events:
-                details.append(SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
+                details.append(
+                    SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"],
+                                          "unknown signature algorithm"))
         elif name.startswith("tls::certificate_"):
             if "tls::signature_algorithm" in events:
-                details.append(SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"], "unknown signature algorithm"))
+                details.append(
+                    SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"],
+                                          "unknown signature algorithm"))
         elif name == "tls::key_exchange":
             if "tls::key_exchange_algorithm" in events:
-                details.append(KX.get(events["tls::key_exchange_algorithm"], "unknown algorithm"))
+                details.append(KX.get(events["tls::key_exchange_algorithm"],
+                                      "unknown algorithm"))
             if "tls::group" in events:
-                details.append(SUPPORTED_GROUPS.get(events["tls::group"], "unknown group"))
+                details.append(SUPPORTED_GROUPS.get(events["tls::group"],
+                                                    "unknown group"))
 
         return ', '.join(details)
 
     def parse_span(self, parent, span):
         events = span.get("events", {})
-        spans = span.get("spans", [])
         name = events.pop("name", "unknown")
         name = f"{name} [{self.format_details(name, events)}]"
 
@@ -126,7 +115,6 @@ class FlameGraphCLI:
         spans = json.load(self.args.input)
 
         for span in spans:
-            events = span.get("events", {})
             spans = span.get("spans", [])
             context = span.pop("context", "unknown")
 
@@ -152,7 +140,7 @@ class FlameGraphCLI:
                         .replace("/** @flamegraph_json **/", stacks_json)
                     )
             except IOError as err:
-                print("Error reading template file: {}".format(err), file=sys.stderr)
+                print(f"Error reading template file: {err}", file=sys.stderr)
                 sys.exit(1)
             output_fn = self.args.output or "flamegraph.html"
         else:
@@ -160,17 +148,21 @@ class FlameGraphCLI:
             output_fn = self.args.output or "stacks.json"
 
         if output_fn == "-":
-            with io.open(sys.stdout.fileno(), "w", encoding="utf-8", closefd=False) as out:
+            with io.open(sys.stdout.fileno(), "w", encoding="utf-8",
+                         closefd=False) as out:
                 out.write(output_str)
         else:
-            print("dumping data to {}".format(output_fn))
+            print(f"dumping data to {output_fn}")
             try:
                 with io.open(output_fn, "w", encoding="utf-8") as out:
                     out.write(output_str)
             except IOError as err:
-                print("Error writing output file: {}".format(err), file=sys.stderr)
+                print(f"Error writing output file: {err}", file=sys.stderr)
                 sys.exit(1)
 
+
+TEMPLATE = \
+    "/usr/share/d3-flame-graph/d3-flamegraph-base.html"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create flame graphs.")
@@ -180,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output",
                         help="output file name")
     parser.add_argument("--template",
-                        default="/usr/share/d3-flame-graph/d3-flamegraph-base.html",
+                        default=TEMPLATE,
                         help="path to flame graph HTML template")
     parser.add_argument("--colorscheme",
                         default="blue-green",
