@@ -1,3 +1,6 @@
+.PHONY: check clean mypy flake8
+
+SOURCES = flamegraph.py gen_tables.py
 CSV = tls-parameters-4.csv tls-signaturescheme.csv tls-parameters-8.csv
 
 all: tables.py
@@ -11,6 +14,14 @@ tables.py: gen_tables.py tls-parameters-4.csv tls-signaturescheme.csv tls-parame
 		--signature-schemes tls-signaturescheme.csv \
 		--supported-groups tls-parameters-8.csv \
 		--output $@
+
+mypy: $(SOURCES)
+	MYPYPATH=. mypy $(SOURCES)
+
+flake8: $(SOURCES)
+	flake8 $(SOURCES)
+
+check: mypy flake8
 
 clean:
 	rm -f $(CSV)
