@@ -640,8 +640,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libbpf-cargo"
-version = "0.13.1"
-source = "git+https://github.com/libbpf/libbpf-rs.git?rev=7c9b754e396e89fc8a9129809f769d212f09e30f#7c9b754e396e89fc8a9129809f769d212f09e30f"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a63a7f053679c21efd43a50867ad5945c1cadaaea34e5c8182c4e3b2da199af"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -662,8 +663,9 @@ dependencies = [
 
 [[package]]
 name = "libbpf-rs"
-version = "0.19.1"
-source = "git+https://github.com/libbpf/libbpf-rs.git?rev=7c9b754e396e89fc8a9129809f769d212f09e30f#7c9b754e396e89fc8a9129809f769d212f09e30f"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c1401b366ec96859ef47e68a26f6b9e7cc2f241fafd8c844eba50033bf548b3"
 dependencies = [
  "bitflags",
  "lazy_static",
