@@ -174,3 +174,4 @@ be installed with `gem install --user cbor-diag`.
 
 - [libbpf-async](https://github.com/fujita/libbpf-async) for asynchronous BPF ringbuf implementation over libbpf-rs
 - [rust-keylime](https://github.com/keylime/rust-keylime/) for permissions management code
+- [tarpc](https://github.com/google/tarpc) for the pubsub example implementation

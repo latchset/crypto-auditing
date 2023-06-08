@@ -1,0 +1,33 @@
+[package]
+name = "crypto-auditing-event-broker"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+authors = ["The crypto-auditing developers"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4", features=["derive"] }
+crypto-auditing-types = { path = "../types" }
+futures = "0.3"
+futures-util = "0.3"
+inotify = "0.10"
+serde_cbor = "0.10"
+tarpc = { version = "0.33", features = ["full"] }
+tokio = { version = "1.23", features=["full"] }
+tokio-serde = { version = "0.8", features=["cbor"] }
+tokio-stream = "0.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features=["env-filter"] }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "crypto-auditing-event-broker"
+path = "src/server.rs"
+
+[[example]]
+name = "client"

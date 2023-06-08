@@ -92,6 +92,18 @@ impl EventGroup {
         self.events.append(&mut other.events);
     }
 
+    pub fn filter_events(&mut self, scopes: &Vec<String>) {
+        self.events = self
+            .events
+            .iter()
+            .cloned()
+            .filter(|event| match event {
+                Event::NewContext { .. } => true,
+                Event::Data { key, .. } => scopes.iter().any(|scope| key.starts_with(scope)),
+            })
+            .collect();
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
         let context = unsafe { format_context((*header).pid_tgid, (*header).context) };
