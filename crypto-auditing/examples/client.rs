@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use crypto_auditing_event_broker::{Client, SOCKET_PATH};
+use crypto_auditing::event_broker::{Client, SOCKET_PATH};
 use futures::StreamExt;
 use std::path::PathBuf;
 use tokio::signal;

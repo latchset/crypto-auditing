@@ -24,7 +24,7 @@ mod skel {
 }
 use skel::*;
 
-use crypto_auditing_types as types;
+use crypto_auditing::types;
 
 fn bump_memlock_rlimit() -> Result<()> {
     let rlimit = libc::rlimit {

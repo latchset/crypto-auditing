@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use crypto_auditing::types::EventGroup;
+use crate::types::EventGroup;
 
 #[tarpc::service]
 pub trait Subscriber {

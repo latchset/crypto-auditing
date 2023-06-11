@@ -9,7 +9,7 @@ authors = ["The crypto-auditing developers"]
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4", features=["derive"] }
-crypto-auditing-types = { path = "../types" }
+crypto-auditing = { path = "../crypto-auditing" }
 hex = "0.4"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_cbor = "0.10"
