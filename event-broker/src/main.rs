@@ -3,9 +3,11 @@
 
 use anyhow::{Context as _, Result};
 use clap::Parser;
-use crypto_auditing_types::EventGroup;
-use futures::{future, try_join};
-use futures_util::StreamExt;
+use crypto_auditing::{
+    event_broker::SOCKET_PATH,
+    types::EventGroup,
+};
+use futures::{future, stream::StreamExt, try_join};
 use inotify::{EventMask, Inotify, WatchMask};
 use serde_cbor::de::Deserializer;
 use std::collections::HashMap;
@@ -18,9 +20,6 @@ use tokio_stream::wrappers::ReceiverStream;
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-mod service;
-use service::{SubscriberClient, SOCKET_PATH};
-
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(about = "Event broker server for crypto-auditing")]
@@ -31,6 +30,9 @@ struct Cli {
     #[arg(short, long, default_value = SOCKET_PATH)]
     socket_path: PathBuf,
 }
+
+mod service;
+use service::SubscriberClient;
 
 struct Reader {
     log_path: PathBuf,
@@ -144,7 +146,7 @@ impl Publisher {
             subscriptions = self.subscriptions.read().unwrap().clone();
             for subscription in subscriptions.values() {
                 let mut group = group.clone();
-                group.filter_events(&subscription.scopes);
+                group.events_filtered(&subscription.scopes);
                 if !group.events().is_empty() {
                     publications.push(subscription.client.receive(context::current(), group));
                 }

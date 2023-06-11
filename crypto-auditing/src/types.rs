@@ -54,27 +54,33 @@ fn format_context(pid_tgid: u64, context: i64) -> ContextID {
 }
 
 impl EventGroup {
+    /// Returns the context ID associated with the event group
     pub fn context(&self) -> &ContextID {
         &self.context
     }
 
+    /// Returns the start time of the event group
     pub fn start(&self) -> Duration {
         self.start
     }
 
+    /// Returns the end time of the event group
     pub fn end(&self) -> Duration {
         self.end
     }
 
+    /// Returns the events contained in the event group
     pub fn events(&self) -> &Vec<Event> {
         &self.events
     }
 
+    /// Returns true if this event group is associated with the given process ID
     pub fn matches_pid(&self, pid: libc::pid_t) -> bool {
         (u64::from_le_bytes(self.context()[..8].try_into().unwrap()) & 0xffffffff)
-            == pid.try_into().unwrap()
+            == <i32 as TryInto<u64>>::try_into(pid).unwrap()
     }
 
+    /// Returns encrypted context ID associated with the event group
     pub fn encrypt_context<F>(&mut self, f: F) -> Result<(), Box<dyn std::error::Error>>
     where
         F: Fn(&mut ContextID) -> Result<(), Box<dyn std::error::Error>>,
@@ -87,12 +93,14 @@ impl EventGroup {
         Ok(())
     }
 
+    /// Merges this event group with another which shares the same context ID
     pub fn coalesce(&mut self, other: &mut Self) {
         self.end = other.end;
         self.events.append(&mut other.events);
     }
 
-    pub fn filter_events(&mut self, scopes: &Vec<String>) {
+    /// Removes events which do not match the given scopes
+    pub fn events_filtered(&mut self, scopes: &Vec<String>) {
         self.events = self
             .events
             .iter()
@@ -104,6 +112,7 @@ impl EventGroup {
             .collect();
     }
 
+    /// Deserializes an event group from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
         let context = unsafe { format_context((*header).pid_tgid, (*header).context) };

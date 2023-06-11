@@ -3,7 +3,7 @@
 
 use anyhow::{Context as _, Result};
 use clap::Parser;
-use crypto_auditing_types::{ContextID, Event, EventData, EventGroup};
+use crypto_auditing::types::{ContextID, Event, EventData, EventGroup};
 use serde::ser::{SerializeSeq, Serializer};
 use serde::Serialize;
 use serde_cbor::de::Deserializer;

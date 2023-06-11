@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use crate::service::SOCKET_PATH;
-use anyhow::Result;
-use crypto_auditing_types::EventGroup;
-use futures::future::{self, AbortHandle};
-use futures_util::Stream;
+use crate::event_broker::{error::Result, service::Subscriber as _, SOCKET_PATH};
+use crate::types::EventGroup;
+use futures::{
+    future::{self, AbortHandle},
+    stream::Stream,
+};
 use std::path::{Path, PathBuf};
 use tarpc::{
     context,
@@ -16,14 +17,37 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::info;
 
-use crate::service::Subscriber as _;
-
 #[derive(Clone, Debug)]
 struct ClientInner {
     scopes: Vec<String>,
     sender: Sender<EventGroup>,
 }
 
+/// A client to the event broker service
+///
+/// # Examples
+///
+/// ```no_run
+/// use crypto_auditing::event_broker::Client;
+/// use futures::stream::StreamExt;
+///
+/// #[tokio::main]
+/// async fn main() -> anyhow::Result<()> {
+///     let client = Client::new().scopes(&vec!["tcp".to_string()]);
+///
+///     let (_handle, mut reader) = client.start().await?;
+///
+///     tokio::spawn(async move {
+///         while let Some(event) = reader.next().await {
+///             println!("{:?}", &event);
+///         }
+///     });
+///
+///     tokio::signal::ctrl_c().await?;
+///
+///     Ok(())
+/// }
+/// ```
 pub struct Client {
     inner: ClientInner,
     address: PathBuf,
@@ -31,7 +55,7 @@ pub struct Client {
 }
 
 #[tarpc::server]
-impl crate::service::Subscriber for ClientInner {
+impl crate::event_broker::service::Subscriber for ClientInner {
     async fn scopes(self, _: context::Context) -> Vec<String> {
         self.scopes.clone()
     }
@@ -44,6 +68,8 @@ impl crate::service::Subscriber for ClientInner {
     }
 }
 
+/// A handle for the client connection, which will be aborted once
+/// the ownership is dropped
 pub struct ClientHandle(AbortHandle);
 
 impl Drop for ClientHandle {
@@ -53,6 +79,7 @@ impl Drop for ClientHandle {
 }
 
 impl Client {
+    /// Returns a new [`Client`]
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel::<EventGroup>(10);
 
@@ -66,16 +93,22 @@ impl Client {
         }
     }
 
+    /// Sets the Unix domain address of event broker
     pub fn address(mut self, address: impl AsRef<Path>) -> Self {
         self.address = address.as_ref().to_owned();
         self
     }
 
+    /// Sets the scopes to restrict matches of events
     pub fn scopes(mut self, scopes: &Vec<String>) -> Self {
         self.inner.scopes = scopes.to_owned();
         self
     }
 
+    /// Starts driving the client connection.
+    ///
+    /// This returns a tuple consisting a [`ClientHandle`] and a [`Stream`]
+    /// which generates a sequence of event groups.
     pub async fn start(self) -> Result<(ClientHandle, impl Stream<Item = EventGroup>)> {
         let server = tarpc::serde_transport::unix::connect(&self.address, Cbor::default).await?;
         let local_addr = server.local_addr()?;

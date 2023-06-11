@@ -1,3 +1,4 @@
 [workspace]
 
-members = ["agent", "event-broker", "log-parser", "types"]
+members = ["agent", "crypto-auditing", "event-broker", "log-parser"]
+resolver = "2"
