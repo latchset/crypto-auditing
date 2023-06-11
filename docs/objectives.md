@@ -6,7 +6,7 @@
   - [Goals](#goals)
   - [Non-Goals](#non-goals)
 - [Proposal](#proposal)
-  - [User Stories](#user-stories-optional)
+  - [User Stories](#user-stories)
     - [Gather Aggregated Statistics on TLS Cipher Suites](#gather-aggregated-statistics-on-tls-cipher-suites)
     - [Identify Specific Uses of SHA-1 in Signatures](#identify-specific-uses-of-sha-1-in-signatures)
     - [Identify Potentially Insecure Algorithms Used in an Organization](#identify-potentially-insecure-algorithms-used-in-an-organization)

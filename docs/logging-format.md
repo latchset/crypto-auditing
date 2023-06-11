@@ -208,7 +208,7 @@ and TLS probe points.
 |--------|------------|-----------------------------------------------------------------|
 | `name` | string     | the name of current context (available names are defined below) |
 
-The context names are defined as follows:
+##### TLS context names
 
 | name                      | description                                                      |
 |---------------------------|------------------------------------------------------------------|
