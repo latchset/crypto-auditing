@@ -339,6 +339,7 @@ dependencies = [
  "tokio",
  "tokio-serde",
  "tokio-stream",
+ "toml 0.6.0",
  "tracing",
  "tracing-subscriber",
 ]
