@@ -2,11 +2,7 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use clap::Parser;
-use crypto_auditing::{
-    event_broker::SOCKET_PATH,
-    types::EventGroup,
-};
+use crypto_auditing::types::EventGroup;
 use futures::{future, stream::StreamExt, try_join};
 use inotify::{EventMask, Inotify, WatchMask};
 use serde_cbor::de::Deserializer;
@@ -20,37 +16,28 @@ use tokio_stream::wrappers::ReceiverStream;
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-#[command(about = "Event broker server for crypto-auditing")]
-struct Cli {
-    /// Path to log file to parse
-    log_path: PathBuf,
-    /// Path to Unix socket
-    #[arg(short, long, default_value = SOCKET_PATH)]
-    socket_path: PathBuf,
-}
+mod config;
 
 mod service;
 use service::SubscriberClient;
 
 struct Reader {
-    log_path: PathBuf,
+    log_file: PathBuf,
 }
 
 impl Reader {
-    fn new(log_path: impl AsRef<Path>) -> Self {
-        let log_path = log_path.as_ref().to_path_buf();
-        Self { log_path }
+    fn new(log_file: impl AsRef<Path>) -> Self {
+        let log_file = log_file.as_ref().to_path_buf();
+        Self { log_file }
     }
 
     async fn read(&self, sender: Sender<EventGroup>) -> Result<()> {
         let mut inotify =
             Inotify::init().with_context(|| format!("unable to initialize inotify"))?;
         inotify
-            .add_watch(&self.log_path, WatchMask::MODIFY | WatchMask::CREATE)
-            .with_context(|| format!("unable to monitor {}", self.log_path.display()))?;
-        let mut file = std::fs::File::open(&self.log_path).ok();
+            .add_watch(&self.log_file, WatchMask::MODIFY | WatchMask::CREATE)
+            .with_context(|| format!("unable to monitor {}", self.log_file.display()))?;
+        let mut file = std::fs::File::open(&self.log_file).ok();
 
         let mut buffer = [0; 1024];
         let mut stream = inotify.event_stream(&mut buffer)?;
@@ -58,8 +45,8 @@ impl Reader {
         while let Some(event_or_error) = stream.next().await {
             let event = event_or_error?;
             if event.mask.contains(EventMask::CREATE) {
-                let new_file = std::fs::File::open(&self.log_path).with_context(|| {
-                    format!("unable to read file `{}`", self.log_path.display())
+                let new_file = std::fs::File::open(&self.log_file).with_context(|| {
+                    format!("unable to read file `{}`", self.log_file.display())
                 })?;
                 let _old = file.replace(new_file);
             }
@@ -161,15 +148,15 @@ impl Publisher {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+    let config = config::Config::new()?;
 
     tracing_subscriber::registry()
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
         .try_init()?;
 
-    let reader = Reader::new(&cli.log_path);
-    let publisher = Publisher::new(&cli.socket_path);
+    let reader = Reader::new(&config.log_file);
+    let publisher = Publisher::new(&config.socket_path);
 
     let (tx, rx) = mpsc::channel::<EventGroup>(10);
     try_join!(reader.read(tx), publisher.publish(rx),).map(|_| ())
