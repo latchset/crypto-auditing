@@ -10,7 +10,7 @@ use std::str::FromStr;
 use toml::{Table, Value};
 
 const CONFIG: &'static str = "/etc/crypto-auditing/event-broker.conf";
-const LOG: &'static str = "audit.cborseq";
+const LOG: &'static str = "/var/log/crypto-auditing/audit.cborseq";
 
 #[derive(Debug)]
 pub struct Config {
