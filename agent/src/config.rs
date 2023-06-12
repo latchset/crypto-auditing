@@ -17,7 +17,7 @@ pub enum Format {
 }
 
 const CONFIG: &'static str = "/etc/crypto-auditing/agent.conf";
-const LOG: &'static str = "audit.cborseq";
+const LOG: &'static str = "/var/log/crypto-auditing/audit.cborseq";
 
 #[derive(Debug)]
 pub struct Config {
