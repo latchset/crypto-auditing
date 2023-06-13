@@ -326,6 +326,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto-auditing-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 4.0.22",
+ "crypto-auditing",
+ "futures",
+ "serde_cbor 0.10.2",
+ "serde_json",
+ "tokio",
+ "toml 0.6.0",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "crypto-auditing-event-broker"
 version = "0.1.0"
 dependencies = [
