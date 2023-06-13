@@ -3,7 +3,6 @@ Description=Event collector agent for crypto-auditing project
 StartLimitInterval=10s
 StartLimitBurst=5
 After=local-fs.target systemd-tmpfiles-setup.service
-Before=sysinit.target shutdown.target
 
 [Service]
 ExecStart=/usr/bin/crypto-auditing-agent

@@ -1,0 +1,18 @@
+[Unit]
+Description=Event broker service for crypto-auditing project
+StartLimitInterval=10s
+StartLimitBurst=5
+After=crypto-auditing-agent.service
+
+[Service]
+ExecStart=/usr/bin/crypto-auditing-event-broker
+ExecStopPost=rm -f /var/lib/crypto-auditing/audit.sock
+KillSignal=SIGINT
+TimeoutSec=60s
+Restart=on-failure
+RestartSec=120s
+# User=crypto-auditing
+# Group=crypto-auditing
+
+[Install]
+WantedBy=default.target
