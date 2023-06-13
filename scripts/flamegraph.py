@@ -19,19 +19,27 @@ import os
 import io
 import argparse
 import json
+import sqlite3
 from tables import CIPHERSUITES, KX, PROTOCOLS, SIGNATURE_SCHEMES, \
     SUPPORTED_GROUPS
 
 
 # pylint: disable=too-few-public-methods
 class Node:
-    def __init__(self, name, libtype):
+    def __init__(self, name, libtype, depth):
         self.name = name
         # "root" | "kernel" | ""
         # "" indicates user space
         self.libtype = libtype
+        self.depth = depth
         self.value = 0
         self.children = []
+        self.cumulative = 1
+
+    def accept(self, visitor):
+        visitor.visit(self)
+        for child in self.children:
+            child.accept(visitor)
 
     def to_json(self):
         return {
@@ -42,10 +50,42 @@ class Node:
         }
 
 
+class Visitor:
+    def visit(self, node):
+        pass
+
+
+class SqliteVisitor(Visitor):
+    def __init__(self, path):
+        self.con = sqlite3.connect(path)
+        self.cur = self.con.cursor()
+        self.cur.execute("""
+CREATE TABLE stacks (
+        level INTEGER,
+        value INTEGER,
+        label STRING,
+        self  INTEGER
+)
+""")
+
+    def visit(self, node):
+        self.cur.execute(f"""
+INSERT INTO stacks VALUES (
+        {node.depth},
+        {node.cumulative},
+        "{node.name}",
+        {node.value}
+)
+""")
+
+    def commit(self):
+        self.con.commit()
+
+
 class FlameGraphCLI:
     def __init__(self, args):
         self.args = args
-        self.stack = Node("all", "root")
+        self.stack = Node("all", "root", 0)
 
         if self.args.format == "html" and \
                 not os.path.isfile(self.args.template):
@@ -58,13 +98,17 @@ package, specify an existing flame graph template
                   file=sys.stderr)
             sys.exit(1)
 
+        if self.args.format == "sqlite":
+            self.sqlite_visitor = \
+                SqliteVisitor(self.args.output or "flamegraph.sqlite")
+
     @staticmethod
     def find_or_create_node(node, name, libtype):
         for child in node.children:
             if child.name == name:
                 return child
 
-        child = Node(name, libtype)
+        child = Node(name, libtype, node.depth + 1)
         node.children.append(child)
         return child
 
@@ -105,6 +149,7 @@ package, specify an existing flame graph template
 
         node = self.find_or_create_node(parent, name, "")
         node.value += 1
+        parent.cumulative += 1
         return node
 
     def parse_spans(self, parent, spans):
@@ -120,9 +165,15 @@ package, specify an existing flame graph template
 
             node = self.find_or_create_node(self.stack, context, "")
             node.value += 1
+            self.stack.cumulative += 1
 
             node = self.parse_span(node, span)
             self.parse_spans(node, spans)
+
+        if self.args.format == "sqlite":
+            self.stack.accept(self.sqlite_visitor)
+            self.sqlite_visitor.commit()
+            return
 
         stacks_json = json.dumps(self.stack, default=lambda x: x.to_json())
 
@@ -167,7 +218,7 @@ TEMPLATE = \
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create flame graphs.")
     parser.add_argument("-f", "--format",
-                        default="html", choices=["json", "html"],
+                        default="html", choices=["json", "html", "sqlite"],
                         help="output file format")
     parser.add_argument("-o", "--output",
                         help="output file name")
