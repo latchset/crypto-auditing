@@ -1,6 +1,6 @@
 [package]
-name = "crypto-auditing-event-broker"
-description = "Event broker for crypto-auditing project"
+name = "crypto-auditing-client"
+description = "Event broker client for crypto-auditing project"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
@@ -10,15 +10,12 @@ authors = ["The crypto-auditing developers"]
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features=["derive"] }
 crypto-auditing = { path = "../crypto-auditing" }
 futures = "0.3"
-inotify = "0.10"
 serde_cbor = "0.10"
-tarpc = { version = "0.33", features = ["serde-transport", "unix"] }
+serde_json = "1.0"
 tokio = "1.23"
-tokio-serde = { version = "0.8", features=["cbor"] }
-tokio-stream = "0.1"
 toml = "0.6"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features=["env-filter"] }

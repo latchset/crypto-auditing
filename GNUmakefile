@@ -16,11 +16,13 @@ systemdsystemunitdir := $(shell pkg-config systemd --variable=systemdsystemunitd
 
 programs = \
 	${TARGETDIR}/${PROFILE}/crypto-auditing-agent \
+	${TARGETDIR}/${PROFILE}/crypto-auditing-client \
 	${TARGETDIR}/${PROFILE}/crypto-auditing-event-broker \
 	${TARGETDIR}/${PROFILE}/crypto-auditing-log-parser
 
 conffiles = \
 	dist/conf/agent.conf \
+	dist/conf/client.conf \
 	dist/conf/event-broker.conf
 
 .PHONY: all
@@ -32,21 +34,22 @@ agent/src/bpf/vmlinux.h:
 $(programs): agent/src/bpf/vmlinux.h
 	cargo build --target-dir="${TARGETDIR}" ${CARGO_ARGS}
 
-.PHONY: install
-install: all
-	for f in $(conffiles); do \
-		install -D -m 644 -S .orig -t /etc/crypto-auditing "$$f"; \
-	done
+.PHONY: install-programs
+install-programs: all
 	for f in $(programs); do \
 		install -D -t ${DESTDIR}/usr/bin "$$f"; \
+	done
+
+.PHONY: install
+install: install-programs
+	for f in $(conffiles); do \
+		install -D -m 644 -S .orig -t /etc/crypto-auditing "$$f"; \
 	done
 	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crypto-auditing-agent.service
 	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crypto-auditing-event-broker.service
 	install -d ${DESTDIR}/var/lib/crypto-auditing
 	install -d ${DESTDIR}/var/log/crypto-auditing
 
-# This only runs tests without TPM access. See tests/run.sh for
-# running full testsuite with swtpm.
 .PHONY: check
 check: all
 	cargo test --target-dir="${TARGETDIR}"
