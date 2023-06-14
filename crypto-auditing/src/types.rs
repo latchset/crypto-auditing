@@ -107,7 +107,9 @@ impl EventGroup {
             .cloned()
             .filter(|event| match event {
                 Event::NewContext { .. } => true,
-                Event::Data { key, .. } => scopes.iter().any(|scope| key.starts_with(scope)),
+                Event::Data { key, .. } => scopes
+                    .iter()
+                    .any(|scope| !key.contains("::") || key.starts_with(&format!("{}::", scope))),
             })
             .collect();
     }
