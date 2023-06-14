@@ -68,7 +68,7 @@ impl Config {
                     --scope <SCOPE> "Scope to restrict matches"
                 )
                 .required(false)
-                .value_parser(value_parser!(PathBuf))
+                .value_parser(value_parser!(String))
                 .action(ArgAction::Append),
             )
             .arg(
