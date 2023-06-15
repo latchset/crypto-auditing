@@ -23,6 +23,8 @@ time = { version = "0.3", features=["formatting", "local-offset", "macros"] }
 tokio = { version = "1.23", features=["full"] }
 tokio-uring = "0.4"
 toml = "0.6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features=["env-filter"] }
 
 [build-dependencies]
 libbpf-cargo = { version = "0.20", features=["novendor"] }

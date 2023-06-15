@@ -9,8 +9,11 @@ use openssl::{
     symm::{Cipher, Crypter, Mode},
 };
 use std::io::prelude::*;
+use std::path::Path;
 use tokio::io::AsyncReadExt;
-use tokio::time::timeout;
+use tokio::time::{timeout, Duration};
+use tracing::{debug, info};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod config;
 mod log_writer;
@@ -48,17 +51,38 @@ fn encrypt_context(key: impl AsRef<[u8]>, context: &ContextID) -> Result<Context
     Ok(ciphertext.try_into().unwrap())
 }
 
-fn open_tracer(config: &config::Config) -> Result<Box<dyn std::io::Write>> {
-    if let Some(trace_file) = &config.trace_file {
-        Ok(Box::new(std::fs::File::create(trace_file)?))
-    } else {
-        Ok(Box::new(std::io::sink()))
+struct Tracer(Box<dyn std::io::Write>);
+
+impl Tracer {
+    fn write(
+        &mut self,
+        elapsed: &Duration,
+        encryption_key: &[u8],
+        data: &[u8],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let trace = serde_cbor::ser::to_vec(&(elapsed, encryption_key, data))?;
+        let _ = self.0.write(&trace)?;
+        self.0.flush()?;
+        Ok(())
+    }
+
+    fn new(path: impl AsRef<Path>) -> Result<Self> {
+        Ok(Self(Box::new(std::fs::File::create(path.as_ref())?)))
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
-    let mut tracer = open_tracer(&config)?;
+
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .try_init()?;
+
+    let mut tracer = match config.trace_file {
+        Some(ref path) => Some(Tracer::new(path)?),
+        None => None,
+    };
 
     bump_memlock_rlimit()?;
 
@@ -128,13 +152,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Successfully waited
             if let Ok(res) = res {
-                let trace = serde_cbor::ser::to_vec(&(
-                    writer.elapsed(),
-                    &encryption_key,
-                    &buffer.as_ref().to_vec(),
-                ))?;
-                let _ = tracer.write(&trace)?;
-                tracer.flush()?;
+                if let Some(ref mut tracer) = tracer {
+                    if let Err(e) = tracer.write(
+                        &writer.elapsed(),
+                        &encryption_key,
+                        &buffer.as_ref().to_vec(),
+                    ) {
+                        info!(error = %e, "error writing trace");
+                    }
+                }
 
                 let n = res?;
                 if n == 0 {
@@ -145,14 +171,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // Ignore groups from ourselves
                 if group.matches_pid(unsafe { libc::getpid() }) {
+                    debug!("skipping group as pid matches the self");
                     continue;
                 }
 
                 // Encrypt context IDs that appear in the event read
-                group.encrypt_context(|context: &mut ContextID| {
+                if let Err(e) = group.encrypt_context(|context: &mut ContextID| {
                     *context = encrypt_context(&encryption_key[..], context)?;
                     Ok(())
-                })?;
+                }) {
+                    info!(error = %e, "error encrypting context ID");
+                    continue;
+                }
 
                 writer.push_group(group);
             }
@@ -161,7 +191,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             }
 
-            writer.flush().await?;
+            if let Err(e) = writer.flush().await {
+                info!(error = %e, "error flushing events");
+            }
         }
 
         writer
