@@ -6,7 +6,7 @@ use clap::{arg, command, parser::ValueSource, value_parser, ArgAction, ArgMatche
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use tokio::time::{Duration, Instant};
+use tokio::time::Duration;
 use toml::{Table, Value};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -19,7 +19,7 @@ pub enum Format {
 const CONFIG: &'static str = "/etc/crypto-auditing/agent.conf";
 const LOG: &'static str = "/var/log/crypto-auditing/audit.cborseq";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Config {
     /// Path to library that defines probes
     pub library: Vec<PathBuf>,
@@ -145,18 +145,6 @@ impl Config {
         }
 
         Ok(config)
-    }
-
-    pub fn coalesce_window_elapsed(&self, instant: &Instant) -> bool {
-        self.coalesce_window
-            .map(|window| instant.elapsed() > window)
-            .unwrap_or(true)
-    }
-
-    pub fn should_rotate_after(&self, nevents: usize) -> bool {
-        self.max_events
-            .map(|max_events| nevents > max_events)
-            .unwrap_or(false)
     }
 
     fn merge_config_file(&mut self, file: impl AsRef<Path>) -> Result<()> {
