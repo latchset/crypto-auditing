@@ -14,9 +14,9 @@ crypto-auditing = { path = "../crypto-auditing" }
 futures = "0.3"
 libbpf-rs = { version = "0.20", features=["novendor"] }
 libc = "0.2"
-nix = "0.24"
+nix = "0.26"
 openssl = "0.10"
-page_size = "0.4"
+page_size = "0.5"
 serde = "1.0"
 serde_cbor = "0.10"
 time = { version = "0.3", features=["formatting", "local-offset", "macros"] }
