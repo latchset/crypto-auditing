@@ -6,7 +6,6 @@ After=crypto-auditing-agent.service
 
 [Service]
 ExecStart=/usr/bin/crypto-auditing-event-broker
-ExecStopPost=rm -f /var/lib/crypto-auditing/audit.sock
 KillSignal=SIGINT
 TimeoutSec=60s
 Restart=on-failure
@@ -15,4 +14,4 @@ RestartSec=120s
 # Group=crypto-auditing
 
 [Install]
-WantedBy=default.target
+Also=crypto-auditing-event-broker.socket

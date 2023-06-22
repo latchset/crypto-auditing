@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
+#[cfg(feature = "libsystemd")]
+use anyhow::bail;
 use anyhow::{Context as _, Result};
 use crypto_auditing::types::EventGroup;
 use futures::{future, stream::StreamExt, try_join};
 use inotify::{EventMask, Inotify, WatchMask};
+#[cfg(feature = "libsystemd")]
+use libsystemd::activation::receive_descriptors;
 use serde_cbor::de::Deserializer;
 use std::collections::HashMap;
 use std::os::fd::{AsRawFd, RawFd};
+#[cfg(feature = "libsystemd")]
+use std::os::fd::{FromRawFd, IntoRawFd};
+use std::os::unix::net::UnixListener as StdUnixListener;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use tarpc::{client, context, tokio_serde::formats::Cbor};
+use tokio::net::UnixListener;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{debug, info};
@@ -82,16 +90,35 @@ impl Publisher {
         }
     }
 
-    async fn publish(&self, receiver: Receiver<EventGroup>) -> Result<()> {
-        let mut connecting_subscribers =
-            tarpc::serde_transport::unix::listen(&self.socket_path, Cbor::default)
-                .await?
-                .filter_map(|r| future::ready(r.ok()));
+    #[cfg(feature = "libsystemd")]
+    fn get_std_listener(&self) -> Result<StdUnixListener> {
+        if let Ok(mut descriptors) = receive_descriptors(false) {
+            if descriptors.len() > 1 {
+                bail!("too many file descriptors");
+            } else if descriptors.len() == 0 {
+                bail!("no file descriptors received");
+            }
+            let fd = descriptors.pop().unwrap().into_raw_fd();
+            Ok(unsafe { StdUnixListener::from_raw_fd(fd) })
+        } else {
+            Ok(StdUnixListener::bind(&self.socket_path)?)
+        }
+    }
 
+    #[cfg(not(feature = "libsystemd"))]
+    fn get_std_listener(&self) -> Result<StdUnixListener> {
+        Ok(StdUnixListener::bind(&self.socket_path)?)
+    }
+
+    async fn publish(&self, receiver: Receiver<EventGroup>) -> Result<()> {
+        let std_listener = self.get_std_listener()?;
+        std_listener.set_nonblocking(true)?;
+        let listener = UnixListener::from_std(std_listener)?;
         let subscriptions = self.subscriptions.clone();
 
         tokio::spawn(async move {
-            while let Some(conn) = connecting_subscribers.next().await {
+            while let Ok((stream, _sock_addr)) = listener.accept().await {
+                let conn = tarpc::serde_transport::Transport::from((stream, Cbor::default()));
                 let subscriber_fd = conn.get_ref().as_raw_fd();
 
                 let tarpc::client::NewClient {

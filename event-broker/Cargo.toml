@@ -8,12 +8,16 @@ authors = ["The crypto-auditing developers"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["libsystemd"]
+
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4", features = ["derive"] }
 crypto-auditing = { path = "../crypto-auditing" }
 futures = "0.3"
 inotify = "0.10"
+libsystemd = { version = "0.6", optional = true }
 serde_cbor = "0.10"
 tarpc = { version = "0.33", features = ["serde-transport", "unix"] }
 tokio = "1.23"
