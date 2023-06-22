@@ -47,7 +47,7 @@ install: install-programs
 	done
 	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crypto-auditing-agent.service
 	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crypto-auditing-event-broker.service
-	install -d ${DESTDIR}/var/lib/crypto-auditing
+	install -d ${DESTDIR}/run/crypto-auditing
 	install -d ${DESTDIR}/var/log/crypto-auditing
 
 .PHONY: check
