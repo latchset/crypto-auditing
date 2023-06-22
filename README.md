@@ -15,16 +15,28 @@ The design documents can be found from the following links:
 - [Logging format for primary event logs](docs/logging-format.md)
 - [USDT probe points](docs/probe-points.md)
 
-## Compiling
+## Installation
 
 1. Install the latest Rust toolchain
-1. Install the dependencies (note that libbpf 1.1.1 or later is required)
+2. Install the instrumented crypto libraries, such as GnuTLS:
+```console
+$ git clone --depth=1 -b wip/usdt https://gitlab.com/gnutls/gnutls.git
+$ ./bootstrap
+$ ./configure --prefix=/path/to/installation
+$ make -j$(nproc)
+$ sudo make install
+```
+3. Install the dependencies (note that libbpf 1.1.1 or later is required)
 ```console
 $ sudo dnf install bpftool make libbpf-devel llvm-devel rustfmt
 ```
-1. Build the programs with `make`
+4. Build the programs with `make`
 ```console
 $ make
+```
+5. Install the programs with `make install`
+```console
+$ sudo make install
 ```
 
 The first step requires `agent/src/bpf/vmlinux.h` to be populated. By
@@ -37,39 +49,55 @@ $ sudo dnf install kernel-devel
 $ cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/src/bpf
 ```
 
-1. Install the programs with `make install` (optional)
-```console
-$ sudo make install
-```
-
 ## Running
 
-1. Compile the target crypto library with defined tracepoints are enabled
+1. Create dedicated user and group (e.g., crypto-auditing:crypto-auditing)
 ```console
-$ git clone --depth=1 -b wip/usdt https://gitlab.com/gnutls/gnutls.git
-$ ./bootstrap
-$ ./configure
-$ make -j$(nproc)
+$ sudo groupadd crypto-auditing
+$ sudo useradd -g crypto-auditing
 ```
-2. Run the agent as root
-```console
-$ sudo ./target/debug/crypto-auditing-agent --library .../gnutls/lib/.libs/libgnutls.so.30.35.0
+2. Modify systemd configuration for agent in `/lib/systemd/system/crypto-auditing-agent.service`:
+```ini
+User=crypto-auditing
+Group=crypto-auditing
 ```
-3. On another terminal, run any commands using the instrumented library
+3. Modify systemd configuration for event-broker in `/lib/systemd/system/crypto-auditing-event-broker.socket`:
+```ini
+SocketUser=crypto-auditing
+SocketGroup=crypto-auditing
+SocketMode=0660
+```
+4. Modify agent configuration in `/etc/crypto-auditing/agent.conf`:
+```toml
+library = ["/usr/lib64/libgnutls.so.30"]
+user = "crypto-auditing:crypto-auditing"
+```
+5. Enable agent and event-broker
 ```console
-$ ./src/gnutls-serv --x509certfile=doc/credentials/x509/cert-rsa-pss.pem --x509keyfile=doc/credentials/x509/key-rsa-pss.pem &
-$ ./src/gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart crypto-auditing-agent.service
+$ sudo systemctl start crypto-auditing-event-broker.socket
+```
+6. Connect to event-broker with client
+```console
+$ crypto-auditing-client --scope tls --format json
+$ crypto-auditing-client --scope tls --format cbor --output audit.cborseq
+```
+7. On another terminal, run any commands using the instrumented library
+```console
+$ gnutls-serv --x509certfile=doc/credentials/x509/cert-rsa-pss.pem --x509keyfile=doc/credentials/x509/key-rsa-pss.pem &
+$ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556
 ^C
-$ ./src/gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556 --priority NORMAL:-VERS-TLS1.3
+$ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556 --priority NORMAL:-VERS-TLS1.3
 ```
 
 ## Inspecting logs
 
-By default, the log will be stored in `audit.cborseq` in a sequence of
+In the above example, client stores logs as a sequence of
 CBOR objects, which can be parsed and printed as a tree with the
-`log_parser` executable:
+`crypto-auditing-log-parser` executable:
 ```console
-$ cargo run --bin crypto-auditing-log-parser audit.cborseq
+$ crypto-auditing-log-parser audit.cborseq
 [
   {
     "context": "33acb8e6ccc65bb285bd2f84cac3bf80",
