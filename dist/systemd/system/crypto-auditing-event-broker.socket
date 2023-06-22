@@ -2,7 +2,7 @@
 Description=Event broker socket for crypto-auditing project
 
 [Socket]
-ListenStream=/var/lib/crypto-auditing/audit.sock
+ListenStream=/run/crypto-auditing/audit.sock
 # SocketUser=crypto-auditing
 # SocketGroup=crypto-auditing
 # SocketMode=0660

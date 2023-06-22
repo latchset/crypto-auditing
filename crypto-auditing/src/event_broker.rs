@@ -10,4 +10,4 @@ mod client;
 pub use client::{Client, ClientHandle};
 
 /// The default path of the Unix domain socket where the event broker is running
-pub const SOCKET_PATH: &'static str = "/var/lib/crypto-auditing/audit.sock";
+pub const SOCKET_PATH: &'static str = "/run/crypto-auditing/audit.sock";
