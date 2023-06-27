@@ -228,6 +228,35 @@ and TLS probe points.
 | `tls::key_exchange_algorithm` | uint16     | Key exchange mode: ECDHE(0), DHE(1), PSK(2), ECDHE-PSK(3), DHE-PSK(4)                            |
 | `tls::group`                  | uint16     | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups])                  |
 
+##### SSH context names
+
+| name                   | description                 |
+|------------------------|-----------------------------|
+| `ssh::handshake_client`| SSH handshake for client    |
+| `ssh::handshake_server`| SSH handshake for server    |
+| `ssh::client_key_sign` | SSH client key proof        |
+| `ssh::server_key_sign` | SSH server key proof        |
+| `ssh::key_exchange`    | SSH key exchange            |
+
+##### SSH keys
+
+All the keys except `rsa_bits` have `string` type.
+
+| key                             | description                                      | example                                                     |
+|---------------------------------|--------------------------------------------------|-------------------------------------------------------------|
+| `ssh::ident_string`             | Software identity string                         | `SSH-2.0-OpenSSH_8.8`                                       |
+| `ssh::key_algorithm`            | Key used in handshake                            | `ssh-ed25519`                                               |
+| `ssh::rsa_bits`                 | Key bits (RSA only)                              | 2048                                                        |
+| `ssh::cert_signature_algorithm` | If cert is used, signature algorithm of the cert | `ecdsa-sha2-nistp521`                                       |
+| `ssh::kex_algorithm`            | Negotiated key exchange algorithm                | `curve25519-sha256`                                         |
+| `ssh::kex_group`                | Group used for key exchange                      | For DH from moduli - modulus itself. Otherwise group name.  |
+| `ssh::c2s_cipher`               | Data cipher algorithm                            | `aes256-gcm@openssh.com`                                    |
+| `ssh::s2c_cipher`               |                                                  |                                                             |
+| `ssh::c2s_mac`                  | Data integrity algorithm                         | empty string for "implicit"                                 |
+| `ssh::s2c_mac`                  |                                                  |                                                             |
+| `ssh::c2s_compression`          | Data compression algorithm                       | empty string for "none"                                     |
+| `ssh::s2c_compression`          |                                                  |                                                             |
+
 ### CBOR based logging format definition
 
 The recommended format of storing events is to use a sequence of
