@@ -234,17 +234,18 @@ and TLS probe points.
 |------------------------|-----------------------------|
 | `ssh::handshake_client`| SSH handshake for client    |
 | `ssh::handshake_server`| SSH handshake for server    |
-| `ssh::client_key_sign` | SSH client key proof        |
-| `ssh::server_key_sign` | SSH server key proof        |
+| `ssh::client_key_sign` | SSH client key signature    |
+| `ssh::server_key_sign` | SSH server key signature    |
 | `ssh::key_exchange`    | SSH key exchange            |
 
 ##### SSH keys
 
 All the keys except `rsa_bits` have `string` type.
+We distinguish server and client values by the context we are in. We log all relevant events in both contexts.
 
 | key                             | description                                      | example                                                     |
 |---------------------------------|--------------------------------------------------|-------------------------------------------------------------|
-| `ssh::ident_string`             | Software identity string                         | `SSH-2.0-OpenSSH_8.8`                                       |
+| `ssh::ident_string`             | Software identification string                   | `SSH-2.0-OpenSSH_8.8`                                       |
 | `ssh::key_algorithm`            | Key used in handshake                            | `ssh-ed25519`                                               |
 | `ssh::rsa_bits`                 | Key bits (RSA only)                              | 2048                                                        |
 | `ssh::cert_signature_algorithm` | If cert is used, signature algorithm of the cert | `ecdsa-sha2-nistp521`                                       |
