@@ -13,16 +13,16 @@ default = ["libsystemd"]
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["cargo", "derive"] }
 crypto-auditing = { path = "../crypto-auditing" }
 futures = "0.3"
 inotify = "0.10"
 libsystemd = { version = "0.6", optional = true }
 serde_cbor = "0.10"
 tarpc = { version = "0.33", features = ["serde-transport", "unix"] }
-tokio = "1.23"
-tokio-serde = { version = "0.8", features=["cbor"] }
+tokio = { version = "1.23", features = ["macros", "rt-multi-thread"] }
+tokio-serde = { version = "0.8", features = ["cbor"] }
 tokio-stream = "0.1"
 toml = "0.6"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features=["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
