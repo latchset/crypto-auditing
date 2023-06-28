@@ -230,13 +230,13 @@ and TLS probe points.
 
 ##### SSH context names
 
-| name                   | description                 |
-|------------------------|-----------------------------|
-| `ssh::handshake_client`| SSH handshake for client    |
-| `ssh::handshake_server`| SSH handshake for server    |
-| `ssh::client_key_sign` | SSH client key signature    |
-| `ssh::server_key_sign` | SSH server key signature    |
-| `ssh::key_exchange`    | SSH key exchange            |
+| name                   | description                            |
+|------------------------|----------------------------------------|
+| `ssh::handshake_client`| SSH handshake for client               |
+| `ssh::handshake_server`| SSH handshake for server               |
+| `ssh::client_key_sign` | SSH client key signature/verification  |
+| `ssh::server_key_sign` | SSH server key signature               |
+| `ssh::key_exchange`    | SSH key exchange                       |
 
 ##### SSH keys
 
@@ -253,9 +253,9 @@ We distinguish server and client values by the context we are in. We log all rel
 | `ssh::kex_group`                | Group used for key exchange                      | For DH from moduli - modulus itself. Otherwise group name.  |
 | `ssh::c2s_cipher`               | Data cipher algorithm                            | `aes256-gcm@openssh.com`                                    |
 | `ssh::s2c_cipher`               |                                                  |                                                             |
-| `ssh::c2s_mac`                  | Data integrity algorithm                         | empty string for "implicit"                                 |
+| `ssh::c2s_mac`                  | Data integrity algorithm                         | Omitted for "implicit"                                      |
 | `ssh::s2c_mac`                  |                                                  |                                                             |
-| `ssh::c2s_compression`          | Data compression algorithm                       | empty string for "none"                                     |
+| `ssh::c2s_compression`          | Data compression algorithm                       | Omitted for "none"                                          |
 | `ssh::s2c_compression`          |                                                  |                                                             |
 
 ### CBOR based logging format definition
