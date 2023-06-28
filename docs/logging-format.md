@@ -234,29 +234,38 @@ and TLS probe points.
 |------------------------|----------------------------------------|
 | `ssh::handshake_client`| SSH handshake for client               |
 | `ssh::handshake_server`| SSH handshake for server               |
-| `ssh::client_key_sign` | SSH client key signature/verification  |
-| `ssh::server_key_sign` | SSH server key signature/verification  |
+| `ssh::client_key`      | SSH client key signature/verification  |
+| `ssh::server_key`      | SSH server key signature/verification  |
 | `ssh::key_exchange`    | SSH key exchange                       |
+
+Example of SSH context tree:
+
+- `ssh::handshake_client`
+  - `ssh::ident_string` = `SSH-2.0-OpenSSH_8.8`
+  - `ssh::client key`
+  - `ssh::key_exchange`
+    - `ssh::kex_algorithm` = `curve25519-sha256`
+    - `ssh::c2s_cipher` = `aes256-gcm@openssh.com`
 
 ##### SSH keys
 
 All the keys except `rsa_bits` have `string` type.
 We distinguish server and client values by the context we are in. We log all relevant events in both contexts.
 
-| key                             | description                                      | example                                                     |
-|---------------------------------|--------------------------------------------------|-------------------------------------------------------------|
-| `ssh::ident_string`             | Software identification string                   | `SSH-2.0-OpenSSH_8.8`                                       |
-| `ssh::key_algorithm`            | Key used in handshake                            | `ssh-ed25519`                                               |
-| `ssh::rsa_bits`                 | Key bits (RSA only)                              | 2048                                                        |
-| `ssh::cert_signature_algorithm` | If cert is used, signature algorithm of the cert | `ecdsa-sha2-nistp521`                                       |
-| `ssh::kex_algorithm`            | Negotiated key exchange algorithm                | `curve25519-sha256`                                         |
-| `ssh::kex_group`                | Group used for key exchange                      | For DH from moduli - modulus itself. Otherwise group name.  |
-| `ssh::c2s_cipher`               | Data cipher algorithm                            | `aes256-gcm@openssh.com`                                    |
-| `ssh::s2c_cipher`               |                                                  |                                                             |
-| `ssh::c2s_mac`                  | Data integrity algorithm                         | Omitted for "implicit"                                      |
-| `ssh::s2c_mac`                  |                                                  |                                                             |
-| `ssh::c2s_compression`          | Data compression algorithm                       | Omitted for "none"                                          |
-| `ssh::s2c_compression`          |                                                  |                                                             |
+| key                             | description                                      | example                    |
+|---------------------------------|--------------------------------------------------|----------------------------|
+| `ssh::ident_string`             | Software identification string                   | `SSH-2.0-OpenSSH_8.8`      |
+| `ssh::key_algorithm`            | Key used in handshake                            | `ssh-ed25519`              |
+| `ssh::rsa_bits`                 | Key bits (RSA only)                              | 2048                       |
+| `ssh::cert_signature_algorithm` | If cert is used, signature algorithm of the cert | `ecdsa-sha2-nistp521`      |
+| `ssh::kex_algorithm`            | Negotiated key exchange algorithm                | `curve25519-sha256`        |
+| `ssh::kex_group`                | Group used for key exchange                      | moduli+bits or group name. |
+| `ssh::c2s_cipher`               | Data cipher algorithm                            | `aes256-gcm@openssh.com`   |
+| `ssh::s2c_cipher`               |                                                  |                            |
+| `ssh::c2s_mac`                  | Data integrity algorithm                         | Omitted for "implicit"     |
+| `ssh::s2c_mac`                  |                                                  |                            |
+| `ssh::c2s_compression`          | Data compression algorithm                       | Omitted for "none"         |
+| `ssh::s2c_compression`          |                                                  |                            |
 
 ### CBOR based logging format definition
 
