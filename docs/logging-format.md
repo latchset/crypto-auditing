@@ -235,7 +235,7 @@ and TLS probe points.
 | `ssh::handshake_client`| SSH handshake for client               |
 | `ssh::handshake_server`| SSH handshake for server               |
 | `ssh::client_key_sign` | SSH client key signature/verification  |
-| `ssh::server_key_sign` | SSH server key signature               |
+| `ssh::server_key_sign` | SSH server key signature/verification  |
 | `ssh::key_exchange`    | SSH key exchange                       |
 
 ##### SSH keys
