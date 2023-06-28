@@ -12,22 +12,22 @@ default = ["tokio-uring"]
 [dependencies]
 anyhow = "1.0"
 bytes = "1.2"
-clap = { version = "4", features=["cargo", "derive"] }
+clap = { version = "4", features = ["cargo", "derive"] }
 crypto-auditing = { path = "../crypto-auditing" }
 futures = "0.3"
-libbpf-rs = { version = "0.20", features=["novendor"] }
+libbpf-rs = { version = "0.20", features = ["novendor"] }
 libc = "0.2"
 nix = "0.26"
 openssl = "0.10"
 page_size = "0.5"
 serde = "1.0"
 serde_cbor = "0.10"
-time = { version = "0.3", features=["formatting", "local-offset", "macros"] }
-tokio = { version = "1.23", features=["full"] }
+time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
+tokio = { version = "1.23", features = ["io-util", "signal"] }
 tokio-uring = { version = "0.4", optional = true }
 toml = "0.6"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features=["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [build-dependencies]
-libbpf-cargo = { version = "0.20", features=["novendor"] }
+libbpf-cargo = { version = "0.20", features = ["novendor"] }
