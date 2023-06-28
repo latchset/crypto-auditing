@@ -8,6 +8,12 @@ use serde_cbor::{ser::IoWrite, Serializer};
 use std::path::PathBuf;
 use time::{macros::format_description, OffsetDateTime};
 use tokio::time::{Duration, Instant};
+#[cfg(not(feature = "tokio-uring"))]
+use tokio::{
+    fs::{rename, File},
+    io::AsyncWriteExt,
+};
+#[cfg(feature = "tokio-uring")]
 use tokio_uring::fs::{rename, File};
 
 pub struct LogWriter {
@@ -97,6 +103,7 @@ impl LogWriter {
             .await
             .with_context(|| format!("unable to sync file `{}`", self.config.log_file.display()))?;
 
+        #[cfg(feature = "tokio-uring")]
         file.close().await.with_context(|| {
             format!("unable to close file `{}`", self.config.log_file.display())
         })?;
@@ -151,8 +158,14 @@ impl LogWriter {
                 config::Format::Packed => serde_cbor::ser::to_vec_packed(&group)?,
                 config::Format::Minimal => to_vec_minimal(&group)?,
             };
-            let (res, _) = match self.file {
-                Some(ref file) => file.write_at(v, self.offset).await,
+            #[cfg(feature = "tokio-uring")]
+            let res = match self.file {
+                Some(ref file) => file.write_at(v, self.offset).await.0,
+                _ => bail!("log file is not opened"),
+            };
+            #[cfg(not(feature = "tokio-uring"))]
+            let res = match self.file {
+                Some(ref mut file) => file.write(&v).await,
                 _ => bail!("log file is not opened"),
             };
             let n = res?;

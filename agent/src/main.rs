@@ -3,6 +3,7 @@
 
 use anyhow::{bail, Context as _, Result};
 use bytes::BytesMut;
+use core::future::Future;
 use crypto_auditing::types::{ContextID, EventGroup};
 use openssl::{
     rand::rand_bytes,
@@ -71,6 +72,20 @@ impl Tracer {
     }
 }
 
+#[cfg(feature = "tokio-uring")]
+fn start<F: Future>(future: F) -> F::Output {
+    tokio_uring::start(future)
+}
+
+#[cfg(not(feature = "tokio-uring"))]
+fn start<F: Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
 
@@ -136,7 +151,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut encryption_key = vec![0; cipher.key_len()];
     rand_bytes(&mut encryption_key)?;
 
-    tokio_uring::start(async {
+    start(async {
         let mut rb = ringbuf::RingBuffer::new(skel.obj.map_mut("ringbuf").unwrap());
 
         if let Some((ref user, ref group)) = config.user {
