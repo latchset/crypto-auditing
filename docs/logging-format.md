@@ -269,15 +269,15 @@ We distinguish server and client values by the context we are in. We log all rel
     - `ssh::key_algorithm` = `ssh-ed25519`
     - `ssh::s2c_cipher` = `aes256-gcm@openssh.com`
     - `ssh::c2s_cipher` = `aes256-gcm@openssh.com`
-    - `ssh::server_key`
-      - `ssh::key_algorithm` = `ssh-ed25519`
-    - `ssh::client_key`
-      - `ssh::key_algorithm` = `ssh-ed25519`
-    - `ssh::server_key`
-      - `ssh::key_algorithm` = `rsa-sha2-256`
-      - `ssh::rsa_bits` = 2048
-    - `ssh::server_key`
-      - `ssh::key_algorithm` = `ecdsa-sha2-nistp256`
+  - `ssh::server_key`
+    - `ssh::key_algorithm` = `ssh-ed25519`
+  - `ssh::client_key`
+    - `ssh::key_algorithm` = `ssh-ed25519`
+  - `ssh::server_key`
+    - `ssh::key_algorithm` = `rsa-sha2-256`
+    - `ssh::rsa_bits` = 2048
+  - `ssh::server_key`
+    - `ssh::key_algorithm` = `ecdsa-sha2-nistp256`
 
 ### CBOR based logging format definition
 
