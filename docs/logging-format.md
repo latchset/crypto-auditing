@@ -254,9 +254,9 @@ We distinguish server and client values by the context we are in. We log all rel
 | `ssh::kex_group`                | Group used for key exchange                      | moduli+bits or group name. |
 | `ssh::c2s_cipher`               | Data cipher algorithm                            | `aes256-gcm@openssh.com`   |
 | `ssh::s2c_cipher`               |                                                  |                            |
-| `ssh::c2s_mac`                  | Data integrity algorithm                         | Omitted for "implicit"     |
+| `ssh::c2s_mac`                  | Data integrity algorithm, omitted for `implicit` | `umac-128-etm@openssh.com` |
 | `ssh::s2c_mac`                  |                                                  |                            |
-| `ssh::c2s_compression`          | Data compression algorithm                       | Omitted for "none"         |
+| `ssh::c2s_compression`          | Data compression algorithm, omitted for `none`   | `zlib@openssh.com`         |
 | `ssh::s2c_compression`          |                                                  |                            |
 
 ##### Example of SSH context tree:
