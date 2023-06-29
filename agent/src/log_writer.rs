@@ -147,6 +147,26 @@ impl LogWriter {
         Ok(())
     }
 
+    #[cfg(feature = "tokio-uring")]
+    async fn write_all(&mut self, data: Vec<u8>) -> Result<()> {
+        let (res, _) = match self.file {
+            Some(ref file) => file.write_at(data, self.offset).await,
+            _ => bail!("log file is not opened"),
+        };
+        let n = res?;
+        self.offset += n as u64;
+        Ok(())
+    }
+
+    #[cfg(not(feature = "tokio-uring"))]
+    async fn write_all(&mut self, data: Vec<u8>) -> Result<()> {
+        match self.file {
+            Some(ref mut file) => file.write_all(&data).await?,
+            _ => bail!("log file is not opened"),
+        };
+        Ok(())
+    }
+
     pub async fn flush(&mut self) -> Result<()> {
         self.pending_events = 0;
         for group in self.groups.clone() {
@@ -158,18 +178,7 @@ impl LogWriter {
                 config::Format::Packed => serde_cbor::ser::to_vec_packed(&group)?,
                 config::Format::Minimal => to_vec_minimal(&group)?,
             };
-            #[cfg(feature = "tokio-uring")]
-            let res = match self.file {
-                Some(ref file) => file.write_at(v, self.offset).await.0,
-                _ => bail!("log file is not opened"),
-            };
-            #[cfg(not(feature = "tokio-uring"))]
-            let res = match self.file {
-                Some(ref mut file) => file.write(&v).await,
-                _ => bail!("log file is not opened"),
-            };
-            let n = res?;
-            self.offset += n as u64;
+            self.write_all(v).await?;
             self.written_events += group.events().len();
         }
         self.groups.clear();
