@@ -228,6 +228,57 @@ and TLS probe points.
 | `tls::key_exchange_algorithm` | uint16     | Key exchange mode: ECDHE(0), DHE(1), PSK(2), ECDHE-PSK(3), DHE-PSK(4)                            |
 | `tls::group`                  | uint16     | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups])                  |
 
+##### SSH context names
+
+| name                   | description                            |
+|------------------------|----------------------------------------|
+| `ssh::handshake_client`| SSH handshake for client               |
+| `ssh::handshake_server`| SSH handshake for server               |
+| `ssh::client_key`      | SSH client key signature/verification  |
+| `ssh::server_key`      | SSH server key signature/verification  |
+| `ssh::key_exchange`    | SSH key exchange                       |
+
+##### SSH keys
+
+All the keys except `rsa_bits` have `string` type.
+We distinguish server and client values by the context we are in. We log all relevant events in both contexts.
+
+| key                             | description                                      | example                    |
+|---------------------------------|--------------------------------------------------|----------------------------|
+| `ssh::ident_string`             | Software identification string                   | `SSH-2.0-OpenSSH_8.8`      |
+| `ssh::peer_ident_string`        | Peer software identification string              | `SSH-2.0-OpenSSH_8.8`      |
+| `ssh::key_algorithm`            | Key used in handshake/key ownership proof        | `ssh-ed25519`              |
+| `ssh::rsa_bits`                 | Key bits (RSA only)                              | 2048                       |
+| `ssh::cert_signature_algorithm` | If cert is used, signature algorithm of the cert | `ecdsa-sha2-nistp521`      |
+| `ssh::kex_algorithm`            | Negotiated key exchange algorithm                | `curve25519-sha256`        |
+| `ssh::kex_group`                | Group used for key exchange                      | moduli+bits or group name. |
+| `ssh::c2s_cipher`               | Data cipher algorithm                            | `aes256-gcm@openssh.com`   |
+| `ssh::s2c_cipher`               |                                                  |                            |
+| `ssh::c2s_mac`                  | Data integrity algorithm, omitted for `implicit` | `umac-128-etm@openssh.com` |
+| `ssh::s2c_mac`                  |                                                  |                            |
+| `ssh::c2s_compression`          | Data compression algorithm, omitted for `none`   | `zlib@openssh.com`         |
+| `ssh::s2c_compression`          |                                                  |                            |
+
+##### Example of SSH context tree:
+
+- `ssh::handshake_client`
+  - `ssh::ident_string` = `SSH-2.0-OpenSSH_8.8`
+  - `ssh::peer_ident_string` = `SSH-2.0-OpenSSH_8.8`
+  - `ssh::key_exchange`
+    - `ssh::kex_algorithm` = `curve25519-sha256`
+    - `ssh::key_algorithm` = `ssh-ed25519`
+    - `ssh::s2c_cipher` = `aes256-gcm@openssh.com`
+    - `ssh::c2s_cipher` = `aes256-gcm@openssh.com`
+  - `ssh::server_key`
+    - `ssh::key_algorithm` = `ssh-ed25519`
+  - `ssh::client_key`
+    - `ssh::key_algorithm` = `ssh-ed25519`
+  - `ssh::server_key`
+    - `ssh::key_algorithm` = `rsa-sha2-256`
+    - `ssh::rsa_bits` = 2048
+  - `ssh::server_key`
+    - `ssh::key_algorithm` = `ecdsa-sha2-nistp256`
+
 ### CBOR based logging format definition
 
 The recommended format of storing events is to use a sequence of
