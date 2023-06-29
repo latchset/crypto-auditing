@@ -69,13 +69,13 @@ SocketMode=0660
 ```
 4. Modify agent configuration in `/etc/crypto-auditing/agent.conf`:
 ```toml
-library = ["/usr/lib64/libgnutls.so.30"]
+library = ["/path/to/installation/lib64/libgnutls.so.30"]
 user = "crypto-auditing:crypto-auditing"
 ```
 5. Enable agent and event-broker
 ```console
 $ sudo systemctl daemon-reload
-$ sudo systemctl restart crypto-auditing-agent.service
+$ sudo systemctl start crypto-auditing-agent.service
 $ sudo systemctl start crypto-auditing-event-broker.socket
 ```
 6. Connect to event-broker with client
