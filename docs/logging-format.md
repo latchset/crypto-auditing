@@ -238,15 +238,6 @@ and TLS probe points.
 | `ssh::server_key`      | SSH server key signature/verification  |
 | `ssh::key_exchange`    | SSH key exchange                       |
 
-Example of SSH context tree:
-
-- `ssh::handshake_client`
-  - `ssh::ident_string` = `SSH-2.0-OpenSSH_8.8`
-  - `ssh::client key`
-  - `ssh::key_exchange`
-    - `ssh::kex_algorithm` = `curve25519-sha256`
-    - `ssh::c2s_cipher` = `aes256-gcm@openssh.com`
-
 ##### SSH keys
 
 All the keys except `rsa_bits` have `string` type.
@@ -255,7 +246,8 @@ We distinguish server and client values by the context we are in. We log all rel
 | key                             | description                                      | example                    |
 |---------------------------------|--------------------------------------------------|----------------------------|
 | `ssh::ident_string`             | Software identification string                   | `SSH-2.0-OpenSSH_8.8`      |
-| `ssh::key_algorithm`            | Key used in handshake                            | `ssh-ed25519`              |
+| `ssh::peer_ident_string`        | Peer software identification string              | `SSH-2.0-OpenSSH_8.8`      |
+| `ssh::key_algorithm`            | Key used in handshake/key ownership proof        | `ssh-ed25519`              |
 | `ssh::rsa_bits`                 | Key bits (RSA only)                              | 2048                       |
 | `ssh::cert_signature_algorithm` | If cert is used, signature algorithm of the cert | `ecdsa-sha2-nistp521`      |
 | `ssh::kex_algorithm`            | Negotiated key exchange algorithm                | `curve25519-sha256`        |
@@ -266,6 +258,26 @@ We distinguish server and client values by the context we are in. We log all rel
 | `ssh::s2c_mac`                  |                                                  |                            |
 | `ssh::c2s_compression`          | Data compression algorithm                       | Omitted for "none"         |
 | `ssh::s2c_compression`          |                                                  |                            |
+
+##### Example of SSH context tree:
+
+- `ssh::handshake_client`
+  - `ssh::ident_string` = `SSH-2.0-OpenSSH_8.8`
+  - `ssh::peer_ident_string` = `SSH-2.0-OpenSSH_8.8`
+  - `ssh::key_exchange`
+    - `ssh::kex_algorithm` = `curve25519-sha256`
+    - `ssh::key_algorithm` = `ssh-ed25519`
+    - `ssh::s2c_cipher` = `aes256-gcm@openssh.com`
+    - `ssh::c2s_cipher` = `aes256-gcm@openssh.com`
+    - `ssh::server_key`
+      - `ssh::key_algorithm` = `ssh-ed25519`
+    - `ssh::client_key`
+      - `ssh::key_algorithm` = `ssh-ed25519`
+    - `ssh::server_key`
+      - `ssh::key_algorithm` = `rsa-sha2-256`
+      - `ssh::rsa_bits` = 2048
+    - `ssh::server_key`
+      - `ssh::key_algorithm` = `ecdsa-sha2-nistp256`
 
 ### CBOR based logging format definition
 
