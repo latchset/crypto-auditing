@@ -23,7 +23,7 @@ page_size = "0.5"
 serde = "1.0"
 serde_cbor = "0.10"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
-tokio = { version = "1.23", features = ["io-util", "signal"] }
+tokio = { version = "1.23", features = ["fs", "io-util", "signal"] }
 tokio-uring = { version = "0.4", optional = true }
 toml = "0.6"
 tracing = "0.1"
