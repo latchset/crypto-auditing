@@ -190,6 +190,16 @@ To simply deserialize it, you can use the `cborseq2json.rb` script
 from [cbor-diag](https://github.com/cabo/cbor-diag) package, which can
 be installed with `gem install --user cbor-diag`.
 
+From the tree output, a flamegraph can be produced with the
+`scripts/flamegraph.py`:
+
+```console
+$ crypto-auditing-log-parser audit.cborseq | python scripts/flamegraph.py -
+dumping data to flamegraph.html
+```
+
+You can open the generated `flamegraph.html` with your browser.
+
 ## License
 
 - `agent/src/bpf/audit.bpf.c`: GPL-2.0-or-later
