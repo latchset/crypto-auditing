@@ -2,6 +2,7 @@ LogEntry = EventGroup
 
 EventGroup = {
   context: ContextID
+  origin: BuildID
   start: time
   end: time
   events: [+ Event]
@@ -10,10 +11,12 @@ EventGroup = {
 Event = NewContext / Data
 
 ContextID = bstr .size 16
+BuildID = bstr .size (20..64)
 
 NewContext = {
   NewContext: {
     parent: ContextID
+    origin: BuildID
   }
 }
 
