@@ -31,6 +31,8 @@ where
 struct Context {
     #[serde_as(as = "Hex")]
     context: ContextID,
+    #[serde_as(as = "Hex")]
+    origin: Vec<u8>,
     #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
     start: Duration,
     #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
@@ -61,9 +63,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match event {
                 Event::NewContext {
                     parent: parent_context,
+                    origin,
                 } => {
                     let context = Rc::new(RefCell::new(Context {
                         context: *group.context(),
+                        origin: origin.to_owned(),
                         start: group.start(),
                         end: group.end(),
                         ..Default::default()

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #include "vmlinux.h"
+#include <bpf/bpf_core_read.h>
 #include <bpf/usdt.bpf.h>
 #include "audit.h"
 
@@ -37,6 +38,15 @@ record_new_context (struct pt_regs *ctx)
   if (err < 0)
     return err;
 
+  /* Tolerate changes in `struct bpf_stack_build_id` definition in the
+     future with longer hash output. */
+  unsigned char buf[sizeof(struct bpf_stack_build_id) + MAX_BUILD_ID_SIZE];
+  struct bpf_stack_build_id *build_id = (struct bpf_stack_build_id *)buf;
+  err = bpf_get_stack (ctx, buf, bpf_core_type_size (struct bpf_stack_build_id),
+		       BPF_F_USER_STACK | BPF_F_USER_BUILD_ID);
+  if (err < 0)
+    return err;
+
   struct audit_new_context_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
 			 sizeof(struct audit_new_context_event_st),
@@ -49,6 +59,12 @@ record_new_context (struct pt_regs *ctx)
 			 sizeof(*event),
 			 context);
   event->parent = parent;
+
+  if (BPF_CORE_READ_BITFIELD(build_id, status) & BPF_STACK_BUILD_ID_VALID)
+    {
+      event->origin_size = bpf_core_field_size (build_id->build_id);
+      bpf_core_read (event->origin, event->origin_size, &build_id->build_id);
+    }
 
   bpf_ringbuf_submit (event, 0);
   return 0;

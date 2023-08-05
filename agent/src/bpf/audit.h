@@ -30,10 +30,14 @@ struct audit_event_header_st
   unsigned long int ktime;	/* u64 */
 };
 
+#define MAX_BUILD_ID_SIZE 64
+
 struct audit_new_context_event_st
 {
   struct audit_event_header_st header;
   long parent;
+  unsigned char origin[MAX_BUILD_ID_SIZE];
+  unsigned long int origin_size;
 };
 
 struct audit_data_event_st

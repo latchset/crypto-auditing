@@ -27,6 +27,8 @@ pub enum Event {
     NewContext {
         #[serde_as(as = "serde_with::Bytes")]
         parent: ContextID,
+        #[serde_as(as = "serde_with::Bytes")]
+        origin: Vec<u8>,
     },
     Data {
         key: String,
@@ -87,7 +89,7 @@ impl EventGroup {
     {
         f(&mut self.context)?;
 
-        if let Some(Event::NewContext { ref mut parent }) = self.events.last_mut() {
+        if let Some(Event::NewContext { ref mut parent, .. }) = self.events.last_mut() {
             f(parent)?;
         }
         Ok(())
@@ -124,11 +126,14 @@ impl EventGroup {
                 let raw_new_context = bytes.as_ptr() as *mut audit_new_context_event_st;
                 let parent =
                     unsafe { format_context((*header).pid_tgid, (*raw_new_context).parent) };
+                let origin = unsafe {
+                    (*raw_new_context).origin[..(*raw_new_context).origin_size as usize].to_vec()
+                };
                 EventGroup {
                     context,
                     start: ktime,
                     end: ktime,
-                    events: vec![Event::NewContext { parent }],
+                    events: vec![Event::NewContext { parent, origin }],
                 }
             }
             audit_event_type_t::AUDIT_EVENT_DATA => unsafe {
