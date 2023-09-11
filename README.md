@@ -14,6 +14,7 @@ The design documents can be found from the following links:
 - [Architecture](docs/architecture.md)
 - [Logging format for primary event logs](docs/logging-format.md)
 - [USDT probe points](docs/probe-points.md)
+- [Measuring performance impact](docs/performance.md)
 
 ## Installation
 
