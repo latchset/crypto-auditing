@@ -14,7 +14,7 @@ default = ["libsystemd"]
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4", features = ["cargo", "derive"] }
-crypto-auditing = { path = "../crypto-auditing" }
+crypto-auditing = { version = "0.1", path = "../crypto-auditing" }
 futures = "0.3"
 inotify = "0.10"
 libsystemd = { version = "0.6", optional = true }
