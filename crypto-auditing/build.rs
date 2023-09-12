@@ -2,7 +2,7 @@
 
 use std::{env, path::PathBuf};
 
-const HDR: &str = "../agent/src/bpf/audit.h";
+const HDR: &str = "src/bpf/audit.h";
 
 fn main() {
     let bindings = bindgen::Builder::default()
