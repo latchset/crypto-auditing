@@ -16,7 +16,7 @@ anyhow = "1.0"
 clap = { version = "4", features = ["cargo", "derive"] }
 crypto-auditing = { version = "0.1", path = "../crypto-auditing" }
 futures = "0.3"
-inotify = "0.10"
+inotify = "0.10.2"
 libsystemd = { version = "0.6", optional = true }
 serde_cbor = "0.11"
 tarpc = { version = "0.33", features = ["serde-transport", "unix"] }

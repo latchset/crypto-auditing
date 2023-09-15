@@ -40,15 +40,16 @@ impl Reader {
     }
 
     async fn read(&self, sender: Sender<EventGroup>) -> Result<()> {
-        let mut inotify =
-            Inotify::init().with_context(|| format!("unable to initialize inotify"))?;
+        let inotify =
+            Inotify::init().with_context(|| "unable to initialize inotify".to_string())?;
         inotify
-            .add_watch(&self.log_file, WatchMask::MODIFY | WatchMask::CREATE)
+            .watches()
+            .add(&self.log_file, WatchMask::MODIFY | WatchMask::CREATE)
             .with_context(|| format!("unable to monitor {}", self.log_file.display()))?;
         let mut file = std::fs::File::open(&self.log_file).ok();
 
         let mut buffer = [0; 1024];
-        let mut stream = inotify.event_stream(&mut buffer)?;
+        let mut stream = inotify.into_event_stream(&mut buffer)?;
 
         while let Some(event_or_error) = stream.next().await {
             let event = event_or_error?;
@@ -95,7 +96,7 @@ impl Publisher {
         if let Ok(mut descriptors) = receive_descriptors(false) {
             if descriptors.len() > 1 {
                 bail!("too many file descriptors");
-            } else if descriptors.len() == 0 {
+            } else if descriptors.is_empty() {
                 bail!("no file descriptors received");
             }
             let fd = descriptors.pop().unwrap().into_raw_fd();

@@ -102,7 +102,7 @@ impl EventGroup {
     }
 
     /// Removes events which do not match the given scopes
-    pub fn events_filtered(&mut self, scopes: &Vec<String>) {
+    pub fn events_filtered(&mut self, scopes: &[String]) {
         self.events = self
             .events
             .iter()
