@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use toml::{Table, Value};
 
-const CONFIG: &'static str = "/etc/crypto-auditing/event-broker.conf";
+const CONFIG: &str = "/etc/crypto-auditing/event-broker.conf";
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Format {
@@ -88,7 +88,7 @@ impl Config {
             .get_matches();
 
         if let Some(config_file) = matches.get_one::<PathBuf>("config") {
-            config.merge_config_file(&config_file)?;
+            config.merge_config_file(config_file)?;
         } else if Path::new(CONFIG).exists() {
             config.merge_config_file(CONFIG)?;
         }
@@ -155,7 +155,7 @@ fn string_array_from_value(value: &Value) -> Result<Vec<String>> {
         .and_then(|array| {
             array
                 .iter()
-                .map(|v| string_from_value(v))
+                .map(string_from_value)
                 .collect::<Result<Vec<String>>>()
         })
 }
@@ -164,14 +164,14 @@ fn string_from_value(value: &Value) -> Result<String> {
     value
         .as_str()
         .ok_or_else(|| anyhow!("value must be string"))
-        .and_then(|v| Ok(v.to_string()))
+        .map(|v| v.to_string())
 }
 
 fn pathbuf_from_value(value: &Value) -> Result<PathBuf> {
     value
         .as_str()
         .ok_or_else(|| anyhow!("value must be string"))
-        .and_then(|v| Ok(PathBuf::from(v)))
+        .map(PathBuf::from)
 }
 
 fn format_from_value(value: &Value) -> Result<Format> {

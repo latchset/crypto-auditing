@@ -16,8 +16,8 @@ pub enum Format {
     Minimal,
 }
 
-const CONFIG: &'static str = "/etc/crypto-auditing/agent.conf";
-const LOG: &'static str = "/var/log/crypto-auditing/audit.cborseq";
+const CONFIG: &str = "/etc/crypto-auditing/agent.conf";
+const LOG: &str = "/var/log/crypto-auditing/audit.cborseq";
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -133,7 +133,7 @@ impl Config {
             .get_matches();
 
         if let Some(config_file) = matches.get_one::<PathBuf>("config") {
-            config.merge_config_file(&config_file)?;
+            config.merge_config_file(config_file)?;
         } else if Path::new(CONFIG).exists() {
             config.merge_config_file(CONFIG)?;
         }
@@ -226,7 +226,7 @@ fn pathbuf_array_from_value(value: &Value) -> Result<Vec<PathBuf>> {
         .and_then(|array| {
             array
                 .iter()
-                .map(|v| pathbuf_from_value(v))
+                .map(pathbuf_from_value)
                 .collect::<Result<Vec<PathBuf>>>()
         })
 }
@@ -235,15 +235,14 @@ fn pathbuf_from_value(value: &Value) -> Result<PathBuf> {
     value
         .as_str()
         .ok_or_else(|| anyhow!("value must be string"))
-        .and_then(|v| Ok(PathBuf::from(v)))
+        .map(PathBuf::from)
 }
 
 fn user_from_value(value: &Value) -> Result<(String, String)> {
     value
         .as_str()
         .ok_or_else(|| anyhow!("value must be string"))
-        .and_then(|v| parse_user(v))
-        .and_then(|v| Ok(v))
+        .map(parse_user)?
 }
 
 fn format_from_value(value: &Value) -> Result<Format> {
@@ -257,12 +256,12 @@ fn duration_millis_from_value(value: &Value) -> Result<Duration> {
     value
         .as_integer()
         .ok_or_else(|| anyhow!("value must be duration in milliseconds"))
-        .and_then(|v| Ok(Duration::from_millis(v as u64)))
+        .map(|v| Duration::from_millis(v as u64))
 }
 
 fn usize_from_value(value: &Value) -> Result<usize> {
     value
         .as_integer()
         .ok_or_else(|| anyhow!("value must be integer"))
-        .and_then(|v| Ok(v as usize))
+        .map(|v| v as usize)
 }

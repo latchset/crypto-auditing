@@ -15,7 +15,7 @@ mod config;
 fn get_writer(c: &config::Config) -> Result<Box<dyn Write + Send>> {
     if let Some(path) = &c.output {
         Ok(File::create(path)
-            .map(|f| Box::new(f))
+            .map(Box::new)
             .with_context(|| format!("unable to create file {}", path.display()))?)
     } else {
         Ok(Box::new(stdout()))

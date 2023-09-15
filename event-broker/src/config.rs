@@ -9,8 +9,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use toml::{Table, Value};
 
-const CONFIG: &'static str = "/etc/crypto-auditing/event-broker.conf";
-const LOG: &'static str = "/var/log/crypto-auditing/audit.cborseq";
+const CONFIG: &str = "/etc/crypto-auditing/event-broker.conf";
+const LOG: &str = "/var/log/crypto-auditing/audit.cborseq";
 
 #[derive(Debug)]
 pub struct Config {
@@ -61,7 +61,7 @@ impl Config {
             .get_matches();
 
         if let Some(config_file) = matches.get_one::<PathBuf>("config") {
-            config.merge_config_file(&config_file)?;
+            config.merge_config_file(config_file)?;
         } else if Path::new(CONFIG).exists() {
             config.merge_config_file(CONFIG)?;
         }
@@ -109,5 +109,5 @@ fn pathbuf_from_value(value: &Value) -> Result<PathBuf> {
     value
         .as_str()
         .ok_or_else(|| anyhow!("value must be string"))
-        .and_then(|v| Ok(PathBuf::from(v)))
+        .map(PathBuf::from)
 }
