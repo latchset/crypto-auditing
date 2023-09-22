@@ -22,7 +22,7 @@ jobs:
     name: Fedora tests
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/fedora:37
+      image: registry.fedoraproject.org/fedora:38
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
