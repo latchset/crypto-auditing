@@ -220,13 +220,14 @@ and TLS probe points.
 
 ##### TLS keys
 
-| key                           | value type | description                                                                                      |
-|-------------------------------|------------|--------------------------------------------------------------------------------------------------|
-| `tls::protocol_version`       | uint16     | Negotiated TLS version                                                                           |
-| `tls::ciphersuite`            | uint16     | Negotiated ciphersuite (as in IANA [registry][iana-tls-ciphersuites])                            |
-| `tls::signature_algorithm`    | uint16     | Signature algorithm used in the handshake (as in IANA [registry][iana-tls-signature-algorithms]) |
-| `tls::key_exchange_algorithm` | uint16     | Key exchange mode: ECDHE(0), DHE(1), PSK(2), ECDHE-PSK(3), DHE-PSK(4)                            |
-| `tls::group`                  | uint16     | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups])                  |
+| key                                | value type     | description                                                                                      |
+|------------------------------------|----------------|--------------------------------------------------------------------------------------------------|
+| `tls::protocol_version`            | uint16         | Negotiated TLS version                                                                           |
+| `tls::ciphersuite`                 | uint16         | Negotiated ciphersuite (as in IANA [registry][iana-tls-ciphersuites])                            |
+| `tls::signature_algorithm`         | uint16         | Signature algorithm used in the handshake (as in IANA [registry][iana-tls-signature-algorithms]) |
+| `tls::key_exchange_algorithm`      | uint16         | Key exchange mode: ECDHE(0), DHE(1), PSK(2), ECDHE-PSK(3), DHE-PSK(4)                            |
+| `tls::group`                       | uint16         | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups])                  |
+| `tls::ext::extended_master_secret` | word (ignored) | Present when extended_master_secret extension is negotiated                                      |
 
 ##### SSH context names
 
