@@ -12,7 +12,7 @@ typedef enum
     AUDIT_DATA_BLOB = 2,
   } audit_data_type_t;
 
-#define KEY_SIZE 32
+#define KEY_SIZE 64
 #define VALUE_SIZE 64
 
 typedef enum
