@@ -122,6 +122,9 @@ package, specify an existing flame graph template
             if "tls::ciphersuite" in events:
                 details.append(CIPHERSUITES.get(events["tls::ciphersuite"],
                                                 "unknown ciphersuite"))
+            for event in events:
+                if event.startswith("tls::ext::"):
+                    details.append(event[len("tls::ext::"):])
         elif name.startswith("tls::certificate_"):
             if "tls::signature_algorithm" in events:
                 details.append(
