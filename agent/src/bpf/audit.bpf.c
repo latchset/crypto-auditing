@@ -5,6 +5,10 @@
 #include <bpf/usdt.bpf.h>
 #include "audit.h"
 
+#define DEBUG(format, ...)			\
+  bpf_trace_printk ("%s: " format, sizeof("%s: " format), \
+		    __PRETTY_FUNCTION__, __VA_ARGS__)
+
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 4096 /* one page */);
@@ -35,14 +39,20 @@ record_new_context (struct pt_regs *ctx, long context, long parent)
   err = bpf_get_stack (ctx, buf, bpf_core_type_size (struct bpf_stack_build_id),
 		       BPF_F_USER_STACK | BPF_F_USER_BUILD_ID);
   if (err < 0)
-    return err;
+    {
+      DEBUG ("unable to extract build-id: %ld\n", err);
+      return err;
+    }
 
   struct audit_new_context_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
 			 sizeof(struct audit_new_context_event_st),
 			 0);
   if (!event)
-    return -ENOMEM;
+    {
+      DEBUG ("unable to allocate ringbuf entry: %ld\n", -ENOMEM);
+      return -ENOMEM;
+    }
 
   populate_event_header (&event->header,
 			 AUDIT_EVENT_NEW_CONTEXT,
@@ -75,7 +85,10 @@ record_word_data (struct pt_regs *ctx, long context, const char *key_ptr,
 			 sizeof(struct audit_word_data_event_st),
 			 0);
   if (!event)
-    return -ENOMEM;
+    {
+      DEBUG ("unable to allocate ringbuf entry: %ld\n", -ENOMEM);
+      return -ENOMEM;
+    }
 
   populate_event_header (&event->base.header,
 			 AUDIT_EVENT_DATA,
@@ -85,7 +98,10 @@ record_word_data (struct pt_regs *ctx, long context, const char *key_ptr,
   event->base.type = AUDIT_DATA_WORD;
   err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
   if (err < 0)
-    goto error;
+    {
+      DEBUG ("unable to read event key: %ld\n", err);
+      goto error;
+    }
   event->value = value;
 
   bpf_ringbuf_submit (event, 0);
@@ -107,7 +123,10 @@ record_string_data (struct pt_regs *ctx, long context, const char *key_ptr,
 			 sizeof(struct audit_blob_data_event_st),
 			 0);
   if (!event)
-    return -ENOMEM;
+    {
+      DEBUG ("unable to allocate ringbuf entry: %ld\n", -ENOMEM);
+      return -ENOMEM;
+    }
 
   populate_event_header (&event->base.header,
 			 AUDIT_EVENT_DATA,
@@ -117,12 +136,18 @@ record_string_data (struct pt_regs *ctx, long context, const char *key_ptr,
   event->base.type = AUDIT_DATA_STRING;
   err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
   if (err < 0)
-    goto error;
+    {
+      DEBUG ("unable to read event key: %ld\n", err);
+      goto error;
+    }
 
   err = bpf_probe_read_user_str (event->value, VALUE_SIZE,
 				 (void *)value_ptr);
   if (err < 0)
-    goto error;
+    {
+      DEBUG ("unable to read event data: %ld\n", err);
+      goto error;
+    }
 
   event->size = err & (VALUE_SIZE - 1);
 
@@ -145,7 +170,10 @@ record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr,
 			 sizeof(struct audit_blob_data_event_st),
 			 0);
   if (!event)
-    return -ENOMEM;
+    {
+      DEBUG ("unable to allocate ringbuf entry: %ld\n", -ENOMEM);
+      return -ENOMEM;
+    }
 
   populate_event_header (&event->base.header,
 			 AUDIT_EVENT_DATA,
@@ -155,12 +183,18 @@ record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr,
   event->base.type = AUDIT_DATA_BLOB;
   err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
   if (err < 0)
-    goto error;
+    {
+      DEBUG ("unable to read event key: %ld\n", err);
+      goto error;
+    }
 
   value_size &= (VALUE_SIZE - 1);
   err = bpf_probe_read_user (event->value, value_size, (void *)value_ptr);
   if (err < 0)
-    goto error;
+    {
+      DEBUG ("unable to read event data: %ld\n", err);
+      goto error;
+    }
 
   event->size = value_size;
 
