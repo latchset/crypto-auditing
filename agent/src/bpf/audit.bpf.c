@@ -24,19 +24,9 @@ populate_event_header (struct audit_event_header_st *header,
 }
 
 static __always_inline int
-record_new_context (struct pt_regs *ctx)
+record_new_context (struct pt_regs *ctx, long context, long parent)
 {
   int err;
-
-  long context;
-  err = bpf_usdt_arg (ctx, 0, &context);
-  if (err < 0)
-    return err;
-
-  long parent;
-  err = bpf_usdt_arg (ctx, 1, &parent);
-  if (err < 0)
-    return err;
 
   /* Tolerate changes in `struct bpf_stack_build_id` definition in the
      future with longer hash output. */
@@ -75,24 +65,10 @@ record_new_context (struct pt_regs *ctx)
 }
 
 static __always_inline int
-record_word_data (struct pt_regs *ctx)
+record_word_data (struct pt_regs *ctx, long context, const char *key_ptr,
+		  long value)
 {
   int err;
-
-  long context;
-  err = bpf_usdt_arg (ctx, 0, &context);
-  if (err < 0)
-    return err;
-
-  long key_ptr;
-  err = bpf_usdt_arg (ctx, 1, &key_ptr);
-  if (err < 0)
-    return err;
-
-  long value_ptr;
-  err = bpf_usdt_arg (ctx, 2, &value_ptr);
-  if (err < 0)
-    return err;
 
   struct audit_word_data_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
@@ -110,7 +86,7 @@ record_word_data (struct pt_regs *ctx)
   err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
   if (err < 0)
     goto error;
-  event->value = value_ptr;
+  event->value = value;
 
   bpf_ringbuf_submit (event, 0);
   return 0;
@@ -121,24 +97,10 @@ record_word_data (struct pt_regs *ctx)
 }
 
 static __always_inline int
-record_string_data (struct pt_regs *ctx)
+record_string_data (struct pt_regs *ctx, long context, const char *key_ptr,
+		    const char *value_ptr)
 {
   int err;
-
-  long context;
-  err = bpf_usdt_arg (ctx, 0, &context);
-  if (err < 0)
-    return err;
-
-  long key_ptr;
-  err = bpf_usdt_arg (ctx, 1, &key_ptr);
-  if (err < 0)
-    return err;
-
-  long value_ptr;
-  err = bpf_usdt_arg (ctx, 2, &value_ptr);
-  if (err < 0)
-    return err;
 
   struct audit_blob_data_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
@@ -173,29 +135,10 @@ record_string_data (struct pt_regs *ctx)
 }
 
 static __always_inline int
-record_blob_data (struct pt_regs *ctx)
+record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr,
+		  void *value_ptr, size_t value_size)
 {
   int err;
-
-  long context;
-  err = bpf_usdt_arg (ctx, 0, &context);
-  if (err < 0)
-    return err;
-
-  long key_ptr;
-  err = bpf_usdt_arg (ctx, 1, &key_ptr);
-  if (err < 0)
-    return err;
-
-  long value_ptr;
-  err = bpf_usdt_arg (ctx, 2, &value_ptr);
-  if (err < 0)
-    return err;
-
-  long value_size;
-  err = bpf_usdt_arg (ctx, 3, &value_size);
-  if (err < 0)
-    return err;
 
   struct audit_blob_data_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
@@ -231,30 +174,32 @@ record_blob_data (struct pt_regs *ctx)
 
 SEC("usdt")
 int
-BPF_USDT(new_context)
+BPF_USDT(new_context, long context, long parent)
 {
-  return record_new_context(ctx);
+  return record_new_context(ctx, context, parent);
 }
 
 SEC("usdt")
 int
-BPF_USDT(word_data)
+BPF_USDT(word_data, long context, const char *key_ptr, long value)
 {
-  return record_word_data(ctx);
+  return record_word_data(ctx, context, key_ptr, value);
 }
 
 SEC("usdt")
 int
-BPF_USDT(string_data)
+BPF_USDT(string_data, long context, const char *key_ptr,
+	 const char *value_ptr)
 {
-  return record_string_data(ctx);
+  return record_string_data(ctx, context, key_ptr, value_ptr);
 }
 
 SEC("usdt")
 int
-BPF_USDT(blob_data)
+BPF_USDT(blob_data, long context, const char *key_ptr,
+	 void *value_ptr, size_t value_size)
 {
-  return record_blob_data(ctx);
+  return record_blob_data(ctx, context, key_ptr, value_ptr, value_size);
 }
 
 char LICENSE[] SEC("license") = "GPL";
