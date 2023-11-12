@@ -4,6 +4,7 @@
 use crate::config;
 use anyhow::{bail, Context as _, Result};
 use crypto_auditing::types::EventGroup;
+use probe::probe;
 use serde_cbor::{ser::IoWrite, Serializer};
 use std::path::PathBuf;
 use time::{macros::format_description, OffsetDateTime};
@@ -179,6 +180,11 @@ impl LogWriter {
                 config::Format::Minimal => to_vec_minimal(&group)?,
             };
             self.write_all(v).await?;
+            probe!(
+                crypto_auditing_internal_agent,
+                event_group,
+                group.events().len()
+            );
             self.written_events += group.events().len();
         }
         self.groups.clear();
