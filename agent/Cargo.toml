@@ -28,6 +28,7 @@ tokio-uring = { version = "0.4", optional = true }
 toml = "0.6"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+probe = "0.3"
 
 [build-dependencies]
 libbpf-cargo = { version = "0.20", features = ["novendor"] }
