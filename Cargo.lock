@@ -18,6 +18,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "agenttest"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "libbpf-cargo",
+ "libbpf-rs",
+ "libc",
+ "nix",
+ "plain",
+ "tempfile",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -408,6 +421,7 @@ dependencies = [
 name = "crypto-auditing-agent"
 version = "0.1.0"
 dependencies = [
+ "agenttest",
  "anyhow",
  "bytes",
  "clap 4.4.2",
@@ -419,8 +433,11 @@ dependencies = [
  "nix",
  "openssl",
  "page_size",
+ "plain",
+ "probe",
  "serde",
  "serde_cbor",
+ "tempfile",
  "time",
  "tokio",
  "tokio-uring",
@@ -1357,10 +1374,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
 
 [[package]]
+name = "plain"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
+
+[[package]]
+name = "probe"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "216e81fcf486280f0b8b18ca43ceafd32739eb0eb703eb024a8d00814eeba556"
 
 [[package]]
 name = "proc-macro-crate"

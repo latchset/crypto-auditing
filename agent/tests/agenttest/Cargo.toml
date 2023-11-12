@@ -1,0 +1,17 @@
+[package]
+name = "agenttest"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+authors = ["The crypto-auditing developers"]
+
+[dependencies]
+anyhow = "1.0"
+libbpf-rs = { version = "0.20", features = ["novendor"] }
+libc = "0.2"
+nix = "0.26"
+tempfile = "3"
+plain = "0.2"
+
+[build-dependencies]
+libbpf-cargo = { version = "0.20", features = ["novendor"] }
