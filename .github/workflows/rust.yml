@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/fedora:38
+      options: --privileged
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
@@ -32,6 +33,12 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+        cargo test --verbose --workspace --exclude crypto-auditing-agent
+    - name: Run integration tests
+      run: |
+        cd agent
+        cargo test --verbose
+        cd -
     - name: Run clippy
       run: cargo clippy
