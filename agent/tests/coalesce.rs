@@ -39,9 +39,13 @@ fn test_probe_coalesce() {
         .expect("unable to spawn agent");
 
     // Wait until the agent process starts up
-    while !log_path.exists() {
+    for _ in 0..5 {
+        if log_path.exists() {
+            break;
+        }
         thread::sleep(Duration::from_millis(100));
     }
+    assert!(log_path.exists());
 
     let result = panic::catch_unwind(|| {
         let foo = String::from("foo\0");
