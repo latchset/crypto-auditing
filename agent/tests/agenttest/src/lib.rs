@@ -3,8 +3,7 @@
 
 use anyhow::{bail, Result};
 use libbpf_rs::{Link, Map, Object, RingBufferBuilder};
-use std::env;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Child;
 use std::time::Duration;
 
@@ -12,23 +11,6 @@ mod skel {
     include!(concat!(env!("OUT_DIR"), "/agent.skel.rs"));
 }
 use skel::*;
-
-pub fn target_dir() -> PathBuf {
-    env::current_exe()
-        .ok()
-        .map(|mut path| {
-            path.pop();
-            if path.ends_with("deps") {
-                path.pop();
-            }
-            path
-        })
-        .unwrap()
-}
-
-pub fn agent_path() -> PathBuf {
-    target_dir().join("crypto-auditing-agent")
-}
 
 pub fn bump_memlock_rlimit() -> Result<()> {
     let rlimit = libc::rlimit {
