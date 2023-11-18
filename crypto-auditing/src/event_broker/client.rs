@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use crate::event_broker::{error::Result, service::Subscriber as _, SOCKET_PATH};
+use crate::event_broker::{error::Result, SOCKET_PATH};
 use crate::types::EventGroup;
 use futures::{
     future::{self, AbortHandle},
     stream::Stream,
+    SinkExt, TryStreamExt,
 };
 use std::path::{Path, PathBuf};
-use tarpc::{
-    context,
-    server::{self, Channel},
-    tokio_serde::formats::Cbor,
-};
+use tokio::net::UnixStream;
 use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio_serde::{formats::SymmetricalCbor, SymmetricallyFramed};
 use tokio_stream::wrappers::ReceiverStream;
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracing::info;
 
 #[derive(Clone, Debug)]
@@ -52,20 +51,6 @@ pub struct Client {
     inner: ClientInner,
     address: PathBuf,
     receiver: Receiver<EventGroup>,
-}
-
-#[tarpc::server]
-impl crate::event_broker::service::Subscriber for ClientInner {
-    async fn scopes(self, _: context::Context) -> Vec<String> {
-        self.scopes.clone()
-    }
-
-    async fn receive(self, _: context::Context, group: EventGroup) {
-        if let Err(e) = self.sender.send(group).await {
-            info!(error = %e,
-                  "unable to send event");
-        }
-    }
 }
 
 /// A handle for the client connection, which will be aborted once
@@ -110,11 +95,42 @@ impl Client {
     /// This returns a tuple consisting a [`ClientHandle`] and a [`Stream`]
     /// which generates a sequence of event groups.
     pub async fn start(self) -> Result<(ClientHandle, impl Stream<Item = EventGroup>)> {
-        let server = tarpc::serde_transport::unix::connect(&self.address, Cbor::default).await?;
-        let local_addr = server.local_addr()?;
-        let handler = server::BaseChannel::with_defaults(server).requests();
-        let (handler, abort_handle) =
-            future::abortable(handler.execute(self.inner.clone().serve()));
+        let stream = UnixStream::connect(&self.address).await?;
+        let local_addr = stream.local_addr()?;
+
+        let (de, ser) = stream.into_split();
+
+        let ser = FramedWrite::new(ser, LengthDelimitedCodec::new());
+        let de = FramedRead::new(de, LengthDelimitedCodec::new());
+
+        let mut ser = SymmetricallyFramed::new(ser, SymmetricalCbor::<Vec<String>>::default());
+        let mut de = SymmetricallyFramed::new(de, SymmetricalCbor::<EventGroup>::default());
+
+        let inner = self.inner.clone();
+        let (handler, abort_handle) = future::abortable(async move {
+            if let Err(e) = ser.send(inner.scopes).await {
+                info!(error = %e,
+                          "unable to send subscription request");
+            }
+            loop {
+                let group = match de.try_next().await {
+                    Ok(group) => group,
+                    Err(e) => {
+                        info!(error = %e,
+                                  "unable to deserialize event");
+                        break;
+                    }
+                };
+
+                if let Some(group) = group {
+                    if let Err(e) = inner.sender.send(group).await {
+                        info!(error = %e,
+                                  "unable to send event");
+                        break;
+                    }
+                }
+            }
+        });
         tokio::spawn(async move {
             match handler.await {
                 Ok(()) | Err(future::Aborted) => info!(?local_addr, "client shutdown."),

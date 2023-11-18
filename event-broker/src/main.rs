@@ -5,7 +5,7 @@
 use anyhow::bail;
 use anyhow::{Context as _, Result};
 use crypto_auditing::types::EventGroup;
-use futures::{future, stream::StreamExt, try_join};
+use futures::{future, stream::StreamExt, try_join, SinkExt, TryStreamExt};
 use inotify::{EventMask, Inotify, WatchMask};
 #[cfg(feature = "libsystemd")]
 use libsystemd::activation::receive_descriptors;
@@ -17,17 +17,15 @@ use std::os::fd::{FromRawFd, IntoRawFd};
 use std::os::unix::net::UnixListener as StdUnixListener;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
-use tarpc::{client, context, tokio_serde::formats::Cbor};
-use tokio::net::UnixListener;
+use tokio::net::{unix::OwnedWriteHalf, UnixListener};
 use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio_serde::{formats::SymmetricalCbor, SymmetricallyFramed};
 use tokio_stream::wrappers::ReceiverStream;
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod config;
-
-mod service;
-use service::SubscriberClient;
 
 struct Reader {
     log_file: PathBuf,
@@ -70,13 +68,18 @@ impl Reader {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct Subscription {
-    client: SubscriberClient,
+    stream: SymmetricallyFramed<
+        FramedWrite<OwnedWriteHalf, LengthDelimitedCodec>,
+        EventGroup,
+        SymmetricalCbor<EventGroup>,
+    >,
     scopes: Vec<String>,
+    errored: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct Publisher {
     socket_path: PathBuf,
     subscriptions: Arc<RwLock<HashMap<RawFd, Subscription>>>,
@@ -119,34 +122,27 @@ impl Publisher {
 
         tokio::spawn(async move {
             while let Ok((stream, _sock_addr)) = listener.accept().await {
-                let conn = tarpc::serde_transport::Transport::from((stream, Cbor::default()));
-                let subscriber_fd = conn.get_ref().as_raw_fd();
-
-                let tarpc::client::NewClient {
-                    client: subscriber,
-                    dispatch,
-                } = SubscriberClient::new(client::Config::default(), conn);
+                let subscriber_fd = stream.as_raw_fd();
 
                 debug!(socket = subscriber_fd, "subscriber connected");
 
-                let subscriptions2 = subscriptions.clone();
-                tokio::spawn(async move {
-                    if let Err(e) = dispatch.await {
-                        info!(error = %e,
-                              "subscriber connection broken");
-                    }
+                let (de, ser) = stream.into_split();
 
-                    debug!(socket = %subscriber_fd, "closing connection");
-                    subscriptions2.write().unwrap().remove(&subscriber_fd);
-                });
+                let ser = FramedWrite::new(ser, LengthDelimitedCodec::new());
+                let de = FramedRead::new(de, LengthDelimitedCodec::new());
+
+                let ser = SymmetricallyFramed::new(ser, SymmetricalCbor::<EventGroup>::default());
+                let mut de =
+                    SymmetricallyFramed::new(de, SymmetricalCbor::<Vec<String>>::default());
 
                 // Populate the scopes
-                if let Ok(scopes) = subscriber.scopes(context::current()).await {
+                if let Some(scopes) = de.try_next().await.unwrap() {
                     subscriptions.write().unwrap().insert(
                         subscriber_fd,
                         Subscription {
-                            client: subscriber,
-                            scopes: scopes.clone(),
+                            stream: ser,
+                            scopes,
+                            errored: Default::default(),
                         },
                     );
                 }
@@ -154,20 +150,27 @@ impl Publisher {
         });
 
         let mut stream = ReceiverStream::new(receiver);
-        let mut subscriptions;
         while let Some(group) = stream.next().await {
+            let mut subscriptions = self.subscriptions.write().unwrap();
             let mut publications = Vec::new();
 
-            subscriptions = self.subscriptions.read().unwrap().clone();
-            for subscription in subscriptions.values() {
+            for (_, subscription) in subscriptions.iter_mut() {
                 let mut group = group.clone();
                 group.events_filtered(&subscription.scopes);
                 if !group.events().is_empty() {
-                    publications.push(subscription.client.receive(context::current(), group));
+                    publications.push(async move {
+                        if let Err(e) = subscription.stream.send(group).await {
+                            info!(error = %e, "unable to send event");
+                            subscription.errored = true;
+                        }
+                    });
                 }
             }
 
             future::join_all(publications).await;
+
+            // Remove errored subscriptions
+            subscriptions.retain(|_, v| !v.errored);
         }
 
         Ok(())

@@ -4,8 +4,6 @@
 mod error;
 pub use error::{Error, Result};
 
-mod service;
-
 mod client;
 pub use client::{Client, ClientHandle};
 
