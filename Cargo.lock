@@ -474,6 +474,7 @@ dependencies = [
  "libsystemd",
  "serde_cbor",
  "tarpc",
+ "tempfile",
  "tokio",
  "tokio-serde",
  "tokio-stream",
