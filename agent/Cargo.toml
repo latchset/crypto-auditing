@@ -1,10 +1,10 @@
 [package]
 name = "crypto-auditing-agent"
 description = "Event collector agent for crypto-auditing project"
-version = "0.1.0"
-edition = "2021"
-license = "GPL-3.0-or-later"
-authors = ["The crypto-auditing developers"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [features]
 default = ["tokio-uring"]
