@@ -1,5 +1,12 @@
 [workspace]
-members = ["agent", "client", "crypto-auditing", "event-broker", "log-parser"]
+members = [
+    "agent",
+    "agent/tests/agenttest",
+    "client",
+    "crypto-auditing",
+    "event-broker",
+    "log-parser"
+]
 resolver = "2"
 
 [workspace.package]
@@ -7,3 +14,35 @@ version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
 authors = ["The crypto-auditing developers"]
+
+[workspace.dependencies]
+anyhow = "1.0"
+bindgen = "0.63"
+bytes = "1.2"
+clap = "4"
+crypto-auditing = { version = "=0.2.0", path = "crypto-auditing" }
+futures = "0.3"
+hex = "0.4"
+inotify = "0.10.2"
+libbpf-rs = { version = "0.20", features = ["novendor"] }
+libbpf-cargo = { version = "0.20", features = ["novendor"] }
+libc = "0.2"
+nix = "0.26"
+openssl = "0.10"
+page_size = "0.6"
+probe = "0.5"
+plain = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_cbor = "0.11"
+serde_json = "1.0"
+serde_with = "3"
+tempfile = "3"
+thiserror = "1.0"
+time = "0.3"
+tokio = "1.23"
+tokio-serde = { version = "0.8", features = ["cbor"] }
+tokio-stream = "0.1"
+tokio-util = { version = "0.7", features = ["codec"] }
+toml = "0.7"
+tracing = "0.1"
+tracing-subscriber = "0.3"
