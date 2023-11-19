@@ -6,26 +6,24 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 default = ["libsystemd"]
 
 [dependencies]
-anyhow = "1.0"
-clap = { version = "4", features = ["cargo", "derive"] }
-crypto-auditing = { version = "0.1", path = "../crypto-auditing" }
-futures = "0.3"
-inotify = "0.10.2"
-libsystemd = { version = "0.6", optional = true }
-serde_cbor = "0.11"
-tokio = { version = "1.23", features = ["macros", "rt-multi-thread"] }
-tokio-serde = { version = "0.8", features = ["cbor"] }
-tokio-stream = "0.1"
-tokio-util = "0.7"
-toml = "0.6"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow.workspace = true
+clap = { workspace = true, features = ["cargo", "derive"] }
+crypto-auditing.workspace = true
+futures.workspace = true
+inotify.workspace = true
+libsystemd = { version = "0.7", optional = true }
+serde_cbor.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio-serde.workspace = true
+tokio-stream.workspace = true
+tokio-util.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [dev-dependencies]
-tempfile = "3"
+tempfile.workspace = true

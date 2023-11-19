@@ -10,30 +10,30 @@ authors.workspace = true
 default = ["tokio-uring"]
 
 [dependencies]
-anyhow = "1.0"
-bytes = "1.2"
-clap = { version = "4", features = ["cargo", "derive"] }
-crypto-auditing = { version = "0.1", path = "../crypto-auditing" }
-futures = "0.3"
-libbpf-rs = { version = "0.20", features = ["novendor"] }
-libc = "0.2"
-nix = "0.26"
-openssl = "0.10"
-page_size = "0.5"
-serde = "1.0"
-serde_cbor = "0.11"
-time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
-tokio = { version = "1.23", features = ["fs", "io-util", "signal"] }
+anyhow.workspace = true
+bytes.workspace = true
+clap = { workspace = true, features = ["cargo", "derive"] }
+crypto-auditing.workspace = true
+futures.workspace = true
+libbpf-rs.workspace = true
+libc.workspace = true
+nix.workspace = true
+openssl.workspace = true
+page_size.workspace = true
+serde.workspace = true
+serde_cbor.workspace = true
+time = { workspace = true, features = ["formatting", "local-offset", "macros"] }
+tokio = { workspace = true, features = ["fs", "io-util", "signal"] }
 tokio-uring = { version = "0.4", optional = true }
-toml = "0.6"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-probe = "0.3"
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+probe.workspace = true
 
 [build-dependencies]
-libbpf-cargo = { version = "0.20", features = ["novendor"] }
+libbpf-cargo.workspace = true
 
 [dev-dependencies]
-tempfile = "3"
-plain = "0.2"
+tempfile.workspace = true
+plain.workspace = true
 agenttest = { path = "tests/agenttest" }
