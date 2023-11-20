@@ -5,6 +5,7 @@ use anyhow::{bail, Context as _, Result};
 use bytes::BytesMut;
 use core::future::Future;
 use crypto_auditing::types::{ContextID, EventGroup};
+use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use openssl::{
     rand::rand_bytes,
     symm::{Cipher, Crypter, Mode},

@@ -2,7 +2,10 @@
 // Copyright (C) 2023 The crypto-auditing developers.
 
 use anyhow::{bail, Result};
-use libbpf_rs::{Link, Map, Object, RingBufferBuilder};
+use libbpf_rs::{
+    skel::{OpenSkel, SkelBuilder},
+    Link, Map, Object, RingBufferBuilder,
+};
 use std::path::Path;
 use std::process::Child;
 use std::time::Duration;
