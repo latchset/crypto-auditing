@@ -28,10 +28,10 @@ conffiles = \
 .PHONY: all
 all: $(programs)
 
-agent/src/bpf/vmlinux.h:
+agent/src/bpf/vmlinux.h agent/tests/agenttest/src/bpf/vmlinux.h:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > $@-t && mv $@-t $@
 
-$(programs): agent/src/bpf/vmlinux.h
+$(programs): agent/src/bpf/vmlinux.h agent/tests/agenttest/src/bpf/vmlinux.h
 	cargo build --target-dir="${TARGETDIR}" ${CARGO_ARGS}
 
 .PHONY: install-programs
