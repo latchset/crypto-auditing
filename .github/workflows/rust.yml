@@ -29,7 +29,9 @@ jobs:
     - name: Install dependencies
       run: dnf install -y cargo clang clippy kernel-devel libbpf-devel llvm-devel rustfmt
     - name: Copy vmlinux.h
-      run: cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/src/bpf
+      run: |
+        cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/src/bpf
+        cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/tests/agenttest/src/bpf
     - name: Build
       run: cargo build --verbose
     - name: Run tests
