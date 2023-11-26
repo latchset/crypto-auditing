@@ -5,7 +5,6 @@ use crypto_auditing::event_broker::Client;
 use futures::stream::StreamExt;
 use std::env;
 use std::fs;
-use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::thread;
@@ -53,7 +52,7 @@ async fn test_event_broker() {
     let test_dir = tempdir().expect("unable to create temporary directory");
 
     let log_path = test_dir.path().join("agent.log");
-    let mut log_file = fs::OpenOptions::new()
+    let _log_file = fs::OpenOptions::new()
         .write(true)
         .create(true)
         .append(true)
@@ -89,19 +88,13 @@ async fn test_event_broker() {
 
     let (_handle, mut reader) = client.start().await.expect("unable to start client");
 
-    // Append more data to log file
-    let mut fixture_file = fs::OpenOptions::new()
-        .read(true)
-        .open(&fixture_dir().join("normal").join("output.cborseq"))
-        .expect("unable to open fixture");
-    let mut buffer = Vec::new();
-    fixture_file
-        .read_to_end(&mut buffer)
-        .expect("unable to read fixture");
-    log_file
-        .write_all(&buffer)
-        .expect("unable to append fixture");
-    log_file.flush().expect("unable to flush fixture");
+    // Append more data to log file, from a separate process
+    let mut child = std::process::Command::new("cp")
+        .arg(&fixture_dir().join("normal").join("output.cborseq"))
+        .arg(&log_path)
+        .spawn()
+        .expect("unable to spawn cp");
 
     assert!(reader.next().await.is_some());
+    child.wait().expect("unable to wait child to complete");
 }
