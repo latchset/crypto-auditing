@@ -17,7 +17,7 @@ futures.workspace = true
 inotify.workspace = true
 libsystemd = { version = "0.7", optional = true }
 serde_cbor.workspace = true
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tokio-serde.workspace = true
 tokio-stream.workspace = true
 tokio-util.workspace = true
