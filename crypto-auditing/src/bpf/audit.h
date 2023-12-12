@@ -1,4 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* Copyright (C) 2023 The crypto-auditing developers. */
 
 /* This file should be self-contained and do not rely on any system
  * headers, because it is used by both the BPF program (audit.bpf.c)

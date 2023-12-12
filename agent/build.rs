@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2023 The crypto-auditing developers.
 
 use libbpf_cargo::SkeletonBuilder;
 use std::{
