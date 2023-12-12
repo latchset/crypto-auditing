@@ -1,4 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* Copyright (C) 2023 The crypto-auditing developers. */
 
 #include "vmlinux.h"
 #include <bpf/usdt.bpf.h>
