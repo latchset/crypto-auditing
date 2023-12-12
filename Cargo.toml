@@ -10,7 +10,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "GPL-3.0-or-later"
 authors = ["The crypto-auditing developers"]
@@ -20,7 +20,7 @@ anyhow = "1.0"
 bindgen = "0.63"
 bytes = "1.2"
 clap = "4"
-crypto-auditing = { version = "=0.2.0", path = "crypto-auditing" }
+crypto-auditing = { version = "=0.2.1", path = "crypto-auditing" }
 futures = "0.3"
 hex = "0.4"
 inotify = "0.10.2"
