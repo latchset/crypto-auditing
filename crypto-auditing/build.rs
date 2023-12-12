@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2023 The crypto-auditing developers.
 
 use std::{env, path::PathBuf};
 
