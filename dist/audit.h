@@ -30,7 +30,7 @@
  * NUL-terminated string, while the value is explicitly sized with
  * VALUE_SIZE
  */
-# define CRYPTO_AUDITING_BLOB_DATA(key_ptr, context, value_ptr, value_size)	\
+# define CRYPTO_AUDITING_BLOB_DATA(context, key_ptr, value_ptr, value_size)	\
 	DTRACE_PROBE4(crypto_auditing, blob_data, context, key_ptr, value_ptr, value_size)
 
 #else
