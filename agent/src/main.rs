@@ -146,6 +146,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
+        let prog = progs.data();
+        if let Ok(link) = prog.attach_usdt(
+            -1, // any process
+            library,
+            "crypto_auditing",
+            "data",
+        ) {
+            links.push(link);
+        }
+        let prog = progs.new_context_with_data();
+        if let Ok(link) = prog.attach_usdt(
+            -1, // any process
+            library,
+            "crypto_auditing",
+            "new_context_with_data",
+        ) {
+            links.push(link);
+        }
     }
 
     let cipher = Cipher::aes_128_ecb();
