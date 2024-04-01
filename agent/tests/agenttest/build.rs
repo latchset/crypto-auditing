@@ -18,9 +18,9 @@ fn main() {
 
     let vmlinux_h = srcdir.join("src").join("bpf").join("vmlinux.h");
     if vmlinux_h.exists() {
-        fs::copy(&vmlinux_h, &builddir.join("vmlinux.h")).expect("unable to copy vmlinux.h");
+        fs::copy(&vmlinux_h, builddir.join("vmlinux.h")).expect("unable to copy vmlinux.h");
     } else {
-        let file = File::create(&builddir.join("vmlinux.h")).expect("unable to create vmlinux.h");
+        let file = File::create(builddir.join("vmlinux.h")).expect("unable to create vmlinux.h");
         Command::new("bpftool")
             .arg("btf")
             .arg("dump")

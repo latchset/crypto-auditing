@@ -16,9 +16,12 @@ use std::os::fd::{AsRawFd, RawFd};
 use std::os::fd::{FromRawFd, IntoRawFd};
 use std::os::unix::net::UnixListener as StdUnixListener;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use tokio::net::{unix::OwnedWriteHalf, UnixListener};
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::{
+    mpsc::{self, Receiver, Sender},
+    RwLock,
+};
 use tokio_serde::{formats::SymmetricalCbor, SymmetricallyFramed};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
@@ -137,7 +140,7 @@ impl Publisher {
 
                 // Populate the scopes
                 if let Some(scopes) = de.try_next().await.unwrap() {
-                    subscriptions.write().unwrap().insert(
+                    subscriptions.write().await.insert(
                         subscriber_fd,
                         Subscription {
                             stream: ser,
@@ -151,7 +154,7 @@ impl Publisher {
 
         let mut stream = ReceiverStream::new(receiver);
         while let Some(group) = stream.next().await {
-            let mut subscriptions = self.subscriptions.write().unwrap();
+            let mut subscriptions = self.subscriptions.write().await;
             let mut publications = Vec::new();
 
             for (_, subscription) in subscriptions.iter_mut() {
