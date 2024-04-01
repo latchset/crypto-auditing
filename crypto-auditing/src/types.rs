@@ -103,17 +103,12 @@ impl EventGroup {
 
     /// Removes events which do not match the given scopes
     pub fn events_filtered(&mut self, scopes: &[String]) {
-        self.events = self
-            .events
-            .iter()
-            .cloned()
-            .filter(|event| match event {
-                Event::NewContext { .. } => true,
-                Event::Data { key, .. } => scopes
-                    .iter()
-                    .any(|scope| !key.contains("::") || key.starts_with(&format!("{}::", scope))),
-            })
-            .collect();
+        self.events.retain(|event| match event {
+            Event::NewContext { .. } => true,
+            Event::Data { key, .. } => scopes
+                .iter()
+                .any(|scope| !key.contains("::") || key.starts_with(&format!("{}::", scope))),
+        });
     }
 
     /// Deserializes an event group from bytes
