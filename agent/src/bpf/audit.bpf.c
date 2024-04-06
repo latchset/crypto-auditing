@@ -150,7 +150,7 @@ record_string_data (struct pt_regs *ctx, long context, const char *key_ptr,
       goto error;
     }
 
-  event->size = err & (VALUE_SIZE - 1);
+  event->size = (unsigned long)err;
 
   bpf_ringbuf_submit (event, 0);
   return 0;
@@ -165,13 +165,19 @@ record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr)
 {
   int err;
 
-  long value_size;
-  err = bpf_usdt_arg (ctx, 3, &value_size);
+  long value;
+  err = bpf_usdt_arg (ctx, 3, &value);
   if (err < 0)
     {
       DEBUG ("unable to determine value size: %ld\n", err);
       return err;
     }
+  if (value < 0 || value > VALUE_SIZE)
+    {
+      DEBUG ("value size out of range: %ld\n", value);
+      return -EINVAL;
+    }
+  unsigned long value_size = (unsigned long)value;
 
   struct audit_blob_data_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
@@ -207,7 +213,6 @@ record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr)
 	  goto error;
 	}
 
-      value_size &= (VALUE_SIZE - 1);
       err = bpf_probe_read_user (event->value, value_size, (void *)value_ptr);
       if (err < 0)
 	{
