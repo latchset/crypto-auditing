@@ -14,7 +14,7 @@ jobs:
     name: Static code checks
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Check formatting
       run: cargo fmt --all -- --check
 
@@ -25,7 +25,7 @@ jobs:
       image: registry.fedoraproject.org/fedora:38
       options: --privileged
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: dnf install -y cargo clang clippy kernel-devel libbpf-devel llvm-devel rustfmt
     - name: Copy vmlinux.h
