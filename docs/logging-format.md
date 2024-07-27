@@ -85,7 +85,7 @@ a more efficient (binary) format will be used in practical deployment.
     {
         "type": "word_data",
         "context": "00..02",
-        "pk::rsa_size": 3072
+        "pk::bits": 3072,
     }
 ]
 ```
@@ -96,7 +96,7 @@ This can be conceptually represented as a tree of events:
   - `tls::protocol_version` = 0x0304
   - `tls::certificate_verify` (00..02)
     - `tls::signature_algorithm` = 0x0804
-    - `pk::rsa_size` = 3072
+    - `pk::bits` = 3072
 
 Since the agent can monitor multiple processes, event sequences could
 be interleaved with each other.  In that situation, context IDs help
@@ -279,6 +279,50 @@ We distinguish server and client values by the context we are in. We log all rel
     - `ssh::rsa_bits` = 2048
   - `ssh::server_key`
     - `ssh::key_algorithm` = `ecdsa-sha2-nistp256`
+
+##### Generic public key cryptography context names
+
+These contexts are only useful when a public key operation cannot be
+determined from the outer context. If it is obvious from the outer
+context, the probe point provider may choose to not create a new
+context.  For example, when the parent context is
+`tls::certificate_verify`, there is no need to create a new context
+with `pk::verify`.
+
+| name              | description                     |
+|-------------------|---------------------------------|
+| `pk::sign`        | A digital signature is created  |
+| `pk::verify`      | A digital signature is verified |
+| `pk::encrypt`     | Encryption is performed         |
+| `pk::decrypt`     | Decryption is performed         |
+| `pk::encapsulate` | A session key is encapsulated   |
+| `pk::decapsulate` | A session key is decpasulated   |
+| `pk::generate`    | A private key is generated      |
+| `pk::derive`      | A shared secret is generated    |
+
+##### Generic public key cryptography keys
+
+The event keys defined here can be attached to any context, not
+limited to the `pk` contexts defined above.
+
+These event keys are only useful when public key algorithm parameters
+cannot be determined from the outer context. If all the parameters are
+obvious from the outer context, the probe point provider may choose to
+not emit the `pk` events.  For example, when the parent context has
+`tls::signature_algorithm`, there is no need to emit `pk::algorithm`.
+
+All the keys except `pk::static` have `string` type. The values can be
+arbitrary and it is a responsibility of the data consumers to
+correlate them.
+
+| key             | value type     | description                                                                                                                |
+|-----------------|----------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pk::algorithm` | string         | Used algorithm name                                                                                                        |
+| `pk::curve`     | string         | Elliptic curve name                                                                                                        |
+| `pk::group`     | string         | FFDH group name                                                                                                            |
+| `pk::bits`      | uint16         | Key strength in bits                                                                                                       |
+| `pk::hash`      | string         | Hash algorithm used for signing or encryption (for prehashed or parametrized schemes such as ECDSA, RSA-PSS, and RSA-OAEP) |
+| `pk::static`    | word (ignored) | Present when `pk::derive` takes place with reused keys                                                                     |
 
 ### CBOR based logging format definition
 
