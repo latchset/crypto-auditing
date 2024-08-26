@@ -11,6 +11,7 @@ use openssl::{
     symm::{Cipher, Crypter, Mode},
 };
 use std::io::prelude::*;
+use std::mem::MaybeUninit;
 use std::path::Path;
 use tokio::io::AsyncReadExt;
 use tokio::time::{timeout, Duration};
@@ -103,15 +104,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bump_memlock_rlimit()?;
 
     let skel_builder = AuditSkelBuilder::default();
-    let open_skel = skel_builder.open()?;
+    let mut storage = MaybeUninit::uninit();
+    let open_skel = skel_builder.open(&mut storage)?;
     let mut skel = open_skel.load()?;
-
-    let mut progs = skel.progs_mut();
 
     let mut links = Vec::new();
     for library in &config.library {
-        let prog = progs.new_context();
-        if let Ok(link) = prog.attach_usdt(
+        if let Ok(link) = skel.progs.new_context.attach_usdt(
             -1, // any process
             library,
             "crypto_auditing",
@@ -119,8 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
-        let prog = progs.word_data();
-        if let Ok(link) = prog.attach_usdt(
+        if let Ok(link) = skel.progs.word_data.attach_usdt(
             -1, // any process
             library,
             "crypto_auditing",
@@ -128,8 +126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
-        let prog = progs.string_data();
-        if let Ok(link) = prog.attach_usdt(
+        if let Ok(link) = skel.progs.string_data.attach_usdt(
             -1, // any process
             library,
             "crypto_auditing",
@@ -137,8 +134,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
-        let prog = progs.blob_data();
-        if let Ok(link) = prog.attach_usdt(
+        if let Ok(link) = skel.progs.blob_data.attach_usdt(
             -1, // any process
             library,
             "crypto_auditing",
@@ -146,8 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
-        let prog = progs.data();
-        if let Ok(link) = prog.attach_usdt(
+        if let Ok(link) = skel.progs.data.attach_usdt(
             -1, // any process
             library,
             "crypto_auditing",
@@ -155,8 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
-        let prog = progs.new_context_with_data();
-        if let Ok(link) = prog.attach_usdt(
+        if let Ok(link) = skel.progs.new_context_with_data.attach_usdt(
             -1, // any process
             library,
             "crypto_auditing",
@@ -171,7 +165,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rand_bytes(&mut encryption_key)?;
 
     start(async {
-        let mut rb = ringbuf::RingBuffer::new(skel.obj.map_mut("ringbuf").unwrap());
+        let mut rb = ringbuf::RingBuffer::new(&skel.maps.ringbuf);
 
         if let Some((ref user, ref group)) = config.user {
             permissions::run_as(user, group)?;

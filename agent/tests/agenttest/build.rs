@@ -4,6 +4,7 @@
 use libbpf_cargo::SkeletonBuilder;
 use std::{
     env,
+    ffi::OsStr,
     fs::{self, File},
     path::PathBuf,
     process::Command,
@@ -35,7 +36,7 @@ fn main() {
     let src = srcdir.join("src").join("bpf").join("agent.bpf.c");
     SkeletonBuilder::new()
         .source(&src)
-        .clang_args(&format!("-I{}", builddir.display()))
+        .clang_args([OsStr::new("-I"), builddir.as_os_str()])
         .build_and_generate(&builddir.join("agent.skel.rs"))
         .unwrap();
     println!("cargo:rerun-if-changed={}", src.display());

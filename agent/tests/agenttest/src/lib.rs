@@ -4,8 +4,9 @@
 use anyhow::{bail, Result};
 use libbpf_rs::{
     skel::{OpenSkel, SkelBuilder},
-    Link, Map, Object, RingBufferBuilder,
+    Link, Map, OpenObject, RingBufferBuilder,
 };
+use std::mem::MaybeUninit;
 use std::path::Path;
 use std::process::Child;
 use std::time::Duration;
@@ -28,15 +29,19 @@ pub fn bump_memlock_rlimit() -> Result<()> {
     Ok(())
 }
 
-pub fn attach_bpf(process: &Child, path: impl AsRef<Path>) -> Result<(Link, Object)> {
+pub fn attach_bpf<'obj>(
+    process: &'obj Child,
+    path: impl AsRef<Path>,
+    storage: &'obj mut MaybeUninit<OpenObject>,
+) -> Result<(Link, AgentSkel<'obj>)> {
     let skel_builder = AgentSkelBuilder::default();
-    let open_skel = skel_builder.open()?;
+
+    let open_skel = skel_builder.open(storage)?;
     let mut skel = open_skel.load()?;
 
-    let mut progs = skel.progs_mut();
-    let prog = progs.event_group();
-
-    let link = prog
+    let link = skel
+        .progs
+        .event_group
         .attach_usdt(
             process.id() as i32,
             path.as_ref(),
@@ -45,7 +50,7 @@ pub fn attach_bpf(process: &Child, path: impl AsRef<Path>) -> Result<(Link, Obje
         )
         .expect("unable to attach prog");
 
-    Ok((link, skel.obj))
+    Ok((link, skel))
 }
 
 // Copied from libbpf-rs/libbpf-rs/tests/test.rs

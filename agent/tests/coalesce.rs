@@ -8,6 +8,7 @@ use crypto_auditing::types::EventGroup;
 use probe::probe;
 use serde_cbor::de::Deserializer;
 use std::env;
+use std::mem::MaybeUninit;
 use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::thread;
@@ -77,14 +78,14 @@ fn test_probe_coalesce() {
     let bar = String::from("bar\0");
     let baz = String::from("baz\0");
 
-    let (_link, object) =
-        attach_bpf(&process.0, &agent_path).expect("unable to attach agent.bpf.o");
-    let map = object.map("ringbuf").expect("unable to get ringbuf map");
+    let mut storage = MaybeUninit::uninit();
+    let (_link, skel) =
+        attach_bpf(&process.0, &agent_path, &mut storage).expect("unable to attach agent.bpf.o");
 
     let timeout = Duration::from_secs(10);
 
     let result = with_ringbuffer(
-        map,
+        &skel.maps.ringbuf,
         || {
             probe!(crypto_auditing, new_context, 1, 2);
             probe!(crypto_auditing, word_data, 1, foo.as_ptr(), 3);
@@ -103,7 +104,7 @@ fn test_probe_coalesce() {
     .expect("unable to exercise probe points");
     assert_eq!(result, 4);
     let result = with_ringbuffer(
-        map,
+        &skel.maps.ringbuf,
         || {
             probe!(crypto_auditing, new_context, 4, 5);
         },
