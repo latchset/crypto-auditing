@@ -23,7 +23,7 @@ clap = "4"
 crypto-auditing = { version = "=0.2.3", path = "crypto-auditing" }
 futures = "0.3"
 hex = "0.4"
-inotify = "0.10.2"
+inotify = "0.11.0"
 libbpf-rs = { version = "0.24.4", default-features = false }
 libbpf-cargo = { version = "0.24.4", default-features = false }
 libc = "0.2"
