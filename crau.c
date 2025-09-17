@@ -50,15 +50,6 @@
 # endif
 #endif /* CRAU_THREAD_LOCAL */
 
-#ifndef CRAU_MAYBE_UNUSED
-# if defined(__has_c_attribute) && \
-  __has_c_attribute (__maybe_unused__)
-#  define CRAU_MAYBE_UNUSED [[__maybe_unused__]]
-# elif defined(__GNUC__)
-#  define CRAU_MAYBE_UNUSED __attribute__((__unused__))
-# endif
-#endif /* CRAU_MAYBE_UNUSED */
-
 static CRAU_THREAD_LOCAL crau_context_t context_stack[CRAU_CONTEXT_STACK_DEPTH] = {
 	0,
 };
@@ -143,6 +134,15 @@ void crau_data(...)
 }
 
 #else
+
+#ifndef CRAU_MAYBE_UNUSED
+# if defined(__has_c_attribute) && \
+  __has_c_attribute (__maybe_unused__)
+#  define CRAU_MAYBE_UNUSED [[__maybe_unused__]]
+# elif defined(__GNUC__)
+#  define CRAU_MAYBE_UNUSED __attribute__((__unused__))
+# endif
+#endif /* CRAU_MAYBE_UNUSED */
 
 void crau_push_context(crau_context_t context CRAU_MAYBE_UNUSED)
 {
