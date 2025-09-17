@@ -20,7 +20,7 @@ application itself.
 
 ```c
 crau_new_context_with_data(
-  (crau_context_t)some_function,
+  (crau_context_t)this_function,
   CRAU_DATA_TYPE_STRING, "name", "pk::sign")
 ...
 crau_data(
