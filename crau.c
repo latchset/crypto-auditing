@@ -47,6 +47,7 @@
 #  define CRAU_THREAD_LOCAL __thread
 # else
 #  error "thread_local support required"
+# endif
 #endif /* CRAU_THREAD_LOCAL */
 
 #ifndef CRAU_MAYBE_UNUSED
