@@ -13,7 +13,8 @@
 #include <stdint.h>
 
 /* An opaque type that represents a context (e.g., TLS handshake)
- * where crypto-auditing events occur.
+ * where crypto-auditing events occur. This should be a unique
+ * identifier within a thread.
  */
 typedef uint64_t crau_context_t;
 
