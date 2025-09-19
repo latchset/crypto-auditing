@@ -59,7 +59,7 @@ CRAU_DATAV(
 sig = mldsa_sign(...);
 ```
 
-Note that those macros don't manage context management.
+Note that those macros don't do context management.
 
 ## License
 
