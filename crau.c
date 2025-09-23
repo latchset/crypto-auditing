@@ -49,7 +49,7 @@
 # elif defined(__GNUC__)
 #  define CRAU_THREAD_LOCAL __thread
 # else
-#  error "thread_local support required"
+#  error "thread_local support is required; define CRAU_THREAD_LOCAL"
 # endif
 #endif /* CRAU_THREAD_LOCAL */
 
@@ -59,7 +59,7 @@
 # elif defined(__CC_ARM)
 #  define CRAU_RETURN_ADDRESS __return_address()
 # else
-#  error "__builtin_return_address support is required"
+#  error "__builtin_return_address support is required; define CRAU_RETURN_ADDRESS"
 # endif
 #endif /* CRAU_RETURN_ADDRESS */
 
