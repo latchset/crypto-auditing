@@ -49,9 +49,10 @@ crau_context_t crau_current_context(void);
  * varargs. Typical usage example is as follows:
  *
  * crau_new_context_with_data(
- *   CRAU_DATA_TYPE_STRING, "name", "pk::sign",
- *   CRAU_DATA_TYPE_STRING, "pk::algorithm", "mldsa",
- *   CRAU_DATA_TYPE_WORD, "pk::bits", 1952 * 8)
+ *   "name", CRAU_DATA_TYPE_STRING, "pk::sign",
+ *   "pk::algorithm", CRAU_DATA_TYPE_STRING, "mldsa",
+ *   "pk::bits", CRAU_DATA_TYPE_WORD, 1952 * 8,
+ *   NULL)
  *
  * This call must be followed by a `crau_pop_context`.
  */

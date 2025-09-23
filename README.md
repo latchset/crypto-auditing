@@ -21,12 +21,14 @@ application itself.
 ```c
 /* Public key signing operation starts (but the algorithm is not known yet) */
 crau_new_context_with_data(
-  CRAU_DATA_TYPE_STRING, "name", "pk::sign")
+  "name", CRAU_DATA_TYPE_STRING, "pk::sign",
+  NULL)
 ...
 /* Signing algorithm and bits are known at this point */
 crau_data(
-  CRAU_DATA_TYPE_STRING, "pk::algorithm", "mldsa",
-  CRAU_DATA_TYPE_WORD, "pk::bits", 1952 * 8)
+  "pk::algorithm", CRAU_DATA_TYPE_STRING, "mldsa",
+  "pk::bits", CRAU_DATA_TYPE_WORD, 1952 * 8,
+  NULL)
 
 /* Do the operation */
 sig = mldsa_sign(...);
