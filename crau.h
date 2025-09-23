@@ -47,14 +47,13 @@ crau_context_t crau_current_context(void);
  * is as follows:
  *
  * crau_new_context_with_data(
- *   (crau_context_t)some_function,
  *   CRAU_DATA_TYPE_STRING, "name", "pk::sign",
  *   CRAU_DATA_TYPE_STRING, "pk::algorithm", "mldsa",
  *   CRAU_DATA_TYPE_WORD, "pk::bits", 1952 * 8)
  *
  * This call must be followed by a `crau_pop_context`.
  */
-void crau_new_context_with_data(crau_context_t context, ...);
+void crau_new_context_with_data(...);
 
 /* Emit events through varargs.
  */
