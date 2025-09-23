@@ -21,7 +21,6 @@ application itself.
 ```c
 /* Public key signing operation starts (but the algorithm is not known yet) */
 crau_new_context_with_data(
-  (crau_context_t)this_function,
   CRAU_DATA_TYPE_STRING, "name", "pk::sign")
 ...
 /* Signing algorithm and bits are known at this point */
