@@ -29,6 +29,13 @@
 
 #include "crau.h"
 
+#include "macros.h"
+
+/* Avoid name clash with crau_data_type_t */
+#undef CRAU_DATA
+#undef CRAU_STRING
+#undef CRAU_BLOB
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>

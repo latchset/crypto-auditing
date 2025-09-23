@@ -9,7 +9,6 @@
 #ifndef CRAU_CRAU_H
 #define CRAU_CRAU_H
 
-#include "macros.h"
 #include <stdint.h>
 
 /* An opaque type that represents a context (e.g., TLS handshake)
@@ -18,15 +17,14 @@
  */
 typedef uint64_t crau_context_t;
 
-/* Types of crypto-auditing event data. CRAU_DATA_TYPE_WORD means an
- * integer in a machine word, CRAU_DATA_TYPESTRING means a
- * NUL-terminated string. CRAU_DATA_TYPE_BLOB means an explicitly
- * sized binary blob.
+/* Types of crypto-auditing event data. CRAU_WORD means an integer in
+ * a machine word, CRAU_STRING means a NUL-terminated
+ * string. CRAU_BLOB means an explicitly sized binary blob.
  */
 enum crau_data_type_t {
-	CRAU_DATA_TYPE_WORD,
-	CRAU_DATA_TYPE_STRING,
-	CRAU_DATA_TYPE_BLOB,
+	CRAU_WORD,
+	CRAU_STRING,
+	CRAU_BLOB,
 };
 
 /* Push a context CONTEXT onto the thread-local context stack.
@@ -49,16 +47,18 @@ crau_context_t crau_current_context(void);
  * varargs. Typical usage example is as follows:
  *
  * crau_new_context_with_data(
- *   "name", CRAU_DATA_TYPE_STRING, "pk::sign",
- *   "pk::algorithm", CRAU_DATA_TYPE_STRING, "mldsa",
- *   "pk::bits", CRAU_DATA_TYPE_WORD, 1952 * 8,
- *   NULL)
+ *   "name", CRAU_STRING, "pk::sign",
+ *   "pk::algorithm", CRAU_STRING, "mldsa",
+ *   "pk::bits", CRAU_WORD, 1952 * 8,
+ *   NULL);
  *
  * This call must be followed by a `crau_pop_context`.
  */
 void crau_new_context_with_data(...);
 
-/* Emit events through varargs.
+/* Emit events through varargs, under the current thread-local
+   context. Unlike `crau_new_context_with_data`, this does not push a
+   new context.
  */
 void crau_data(...);
 
