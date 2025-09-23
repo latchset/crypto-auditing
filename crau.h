@@ -29,7 +29,9 @@ enum crau_data_type_t {
 	CRAU_DATA_TYPE_BLOB,
 };
 
-/* Push a new context CONTEXT onto the thread-local context stack.
+/* Push a context CONTEXT onto the thread-local context stack.
+ *
+ * This call must be followed by a `crau_pop_context`.
  */
 void crau_push_context(crau_context_t context);
 
@@ -42,9 +44,9 @@ crau_context_t crau_pop_context(void);
  */
 crau_context_t crau_current_context(void);
 
-/* Push a new context CONTEXT onto the thread-local context stack,
- * optionally emitting events through varargs. Typical usage example
- * is as follows:
+/* Push a new context (inferred from the call frame) onto the
+ * thread-local context stack, optionally emitting events through
+ * varargs. Typical usage example is as follows:
  *
  * crau_new_context_with_data(
  *   CRAU_DATA_TYPE_STRING, "name", "pk::sign",
