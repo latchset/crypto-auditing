@@ -22,9 +22,9 @@ typedef uint64_t crau_context_t;
  */
 #ifndef CRAU_AUTO_CONTEXT
 # ifdef __GNUC__
-#  define CRAU_AUTO_CONTEXT (crau_context_t)__builtin_return_address(0)
+#  define CRAU_AUTO_CONTEXT (crau_context_t)(uintptr_t)(char *)__builtin_return_address(0)
 # elif defined(__CC_ARM)
-#  define CRAU_AUTO_CONTEXT (crau_context_t)__return_address()
+#  define CRAU_AUTO_CONTEXT (crau_context_t)(uintptr_t)(char *)__return_address()
 # else
 #  define CRAU_AUTO_CONTEXT CRAU_ORPHANED_CONTEXT
 # endif
