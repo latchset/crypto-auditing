@@ -24,7 +24,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include "crau.h"
@@ -106,16 +106,16 @@ accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 			break;
 
 		switch (va_arg(ap, enum crau_data_type_t)) {
-		case CRAU_DATA_TYPE_WORD:
+		case CRAU_WORD:
 			data[count].value_ptr = (void *)va_arg(ap, intptr_t);
 			data[count].value_size = (unsigned long)-2;
 			count++;
 			break;
-		case CRAU_DATA_TYPE_STRING:
+		case CRAU_STRING:
 			data[count].value_ptr = (void *)va_arg(ap, char *);
 			data[count].value_size = (unsigned long)-1;
 			break;
-		case CRAU_DATA_TYPE_BLOB:
+		case CRAU_BLOB:
 			data[count].value_ptr = va_arg(ap, void *);
 			data[count].value_size = va_arg(ap, unsigned long);
 			count++;
