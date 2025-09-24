@@ -63,13 +63,22 @@ crau_context_t crau_pop_context(void);
  */
 crau_context_t crau_current_context(void);
 
-/* Push a new context CONTEXT onto the thread-local context stack,
+/* Push a context CONTEXT onto the thread-local context stack,
  * optionally emitting events through varargs.
+ *
+ * If the depth of the stack exceeds CRAU_CONTEXT_STACK_DEPTH, the
+ * older element will be removed.  This call shall be followed by a
+ * `crau_pop_context`.
+ */
+void crau_push_context_with_data(crau_context_t context, ...);
+
+/* Push a new context (inferred from the current call stack) onto the
+ * thread-local context stack, optionally emitting events through
+ * varargs.
  *
  * Typical usage example is as follows:
  *
  * crau_new_context_with_data(
- *   CRAU_AUTO_CONTEXT,
  *   "name", CRAU_STRING, "pk::sign",
  *   "pk::algorithm", CRAU_STRING, "mldsa",
  *   "pk::bits", CRAU_WORD, 1952 * 8,
@@ -79,7 +88,8 @@ crau_context_t crau_current_context(void);
  * older element will be removed.  This call shall be followed by a
  * `crau_pop_context`.
  */
-void crau_new_context_with_data(crau_context_t context, ...);
+#define crau_new_context_with_data(...) \
+	crau_push_context_with_data(CRAU_AUTO_CONTEXT, __VA_ARGS__)
 
 /* Emit events through varargs, under the current thread-local
  * context. Unlike `crau_new_context_with_data`, this does not push a

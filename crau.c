@@ -64,9 +64,15 @@ static CRAU_THREAD_LOCAL crau_context_t context_stack[CRAU_CONTEXT_STACK_DEPTH] 
 };
 static CRAU_THREAD_LOCAL size_t context_stack_top = 0;
 
-void crau_push_context(crau_context_t context)
+static inline void push_context(crau_context_t context)
 {
 	context_stack[context_stack_top++ % CRAU_CONTEXT_STACK_DEPTH] = context;
+}
+
+void crau_push_context(crau_context_t context)
+{
+	CRAU_NEW_CONTEXT(context, crau_current_context());
+	push_context(context);
 }
 
 crau_context_t crau_pop_context(void)
@@ -111,7 +117,7 @@ accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 	return count;
 }
 
-void crau_new_context_with_data(crau_context_t context, ...)
+void crau_push_context_with_data(crau_context_t context, ...)
 {
 	struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS];
 	size_t count;
@@ -123,7 +129,7 @@ void crau_new_context_with_data(crau_context_t context, ...)
 
 	CRAU_NEW_CONTEXT_WITH_DATA(context, crau_current_context(), data,
 				   count);
-	crau_push_context(context);
+	push_context(context);
 }
 
 void crau_data(char *first_key_ptr, ...)
@@ -164,7 +170,7 @@ crau_context_t crau_current_context(void)
 	return CRAU_ORPHANED_CONTEXT;
 }
 
-void crau_new_context_with_data(crau_context_t context CRAU_MAYBE_UNUSED, ...)
+void crau_push_context_with_data(crau_context_t context CRAU_MAYBE_UNUSED, ...)
 {
 }
 
