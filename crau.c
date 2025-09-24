@@ -17,6 +17,10 @@
  *
  * * CRAU_THREAD_LOCAL: thread-local modifier of the C language
  *   (default: auto-detected)
+ *
+ * * CRAU_MAYBE_UNUSED: an attribute to suppress warnings when a
+ *   function argument is not used in the function body (default:
+ *   auto-detected)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -55,24 +59,14 @@
 # endif
 #endif /* CRAU_THREAD_LOCAL */
 
-#ifndef CRAU_RETURN_ADDRESS
-# ifdef __GNUC__
-#  define CRAU_RETURN_ADDRESS (crau_context_t)__builtin_return_address(0)
-# elif defined(__CC_ARM)
-#  define CRAU_RETURN_ADDRESS (crau_context_t)__return_address()
-# else
-#  error "__builtin_return_address support is required; define CRAU_RETURN_ADDRESS"
-# endif
-#endif /* CRAU_RETURN_ADDRESS */
-
 static CRAU_THREAD_LOCAL crau_context_t context_stack[CRAU_CONTEXT_STACK_DEPTH] = {
 	0,
 };
 static CRAU_THREAD_LOCAL size_t context_stack_top = 0;
 
-void crau_push_context(void)
+void crau_push_context(crau_context_t context)
 {
-	context_stack[context_stack_top++ % CRAU_CONTEXT_STACK_DEPTH] = CRAU_RETURN_ADDRESS;
+	context_stack[context_stack_top++ % CRAU_CONTEXT_STACK_DEPTH] = context;
 }
 
 crau_context_t crau_pop_context(void)
@@ -87,14 +81,14 @@ crau_context_t crau_current_context(void)
 
 static inline size_t
 accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
-		 va_list ap)
+		 va_list ap,
+		 char *key_ptr)
 {
 	size_t count = 0;
 
-	for (; count < CRAU_MAX_DATA_ELEMS;) {
-		data[count].key_ptr = va_arg(ap, char *);
-		if (data[count].key_ptr == NULL)
-			break;
+	for (; key_ptr != NULL && count < CRAU_MAX_DATA_ELEMS;
+	     key_ptr = va_arg(ap, char *)) {
+		data[count].key_ptr = key_ptr;
 
 		switch (va_arg(ap, enum crau_data_type_t)) {
 		case CRAU_WORD:
@@ -117,15 +111,14 @@ accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 	return count;
 }
 
-void crau_new_context_with_data(...)
+void crau_new_context_with_data(crau_context_t context, ...)
 {
-	crau_context_t context = CRAU_RETURN_ADDRESS;
 	struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS];
 	size_t count;
 	va_list ap;
 
-	va_start(ap);
-	count = accumulate_datav(data, ap);
+	va_start(ap, context);
+	count = accumulate_datav(data, ap, va_arg(ap, char *));
 	va_end(ap);
 
 	CRAU_NEW_CONTEXT_WITH_DATA(context, crau_current_context(), data,
@@ -133,14 +126,14 @@ void crau_new_context_with_data(...)
 	crau_push_context(context);
 }
 
-void crau_data(...)
+void crau_data(char *first_key_ptr, ...)
 {
 	struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS];
 	size_t count;
 	va_list ap;
 
-	va_start(ap);
-	count = accumulate_datav(data, ap);
+	va_start(ap, first_key_ptr);
+	count = accumulate_datav(data, ap, first_key_ptr);
 	va_end(ap);
 
 	CRAU_DATA(crau_current_context(), data, count);
@@ -148,7 +141,16 @@ void crau_data(...)
 
 #else
 
-void crau_push_context(void)
+#ifndef CRAU_MAYBE_UNUSED
+# if defined(__has_c_attribute) && \
+  __has_c_attribute (__maybe_unused__)
+#  define CRAU_MAYBE_UNUSED [[__maybe_unused__]]
+# elif defined(__GNUC__)
+#  define CRAU_MAYBE_UNUSED __attribute__((__unused__))
+# endif
+#endif /* CRAU_MAYBE_UNUSED */
+
+void crau_push_context(crau_context_t context CRAU_MAYBE_UNUSED)
 {
 }
 
@@ -162,11 +164,11 @@ crau_context_t crau_current_context(void)
 	return CRAU_ORPHANED_CONTEXT;
 }
 
-void crau_new_context_with_data(...)
+void crau_new_context_with_data(crau_context_t context CRAU_MAYBE_UNUSED, ...)
 {
 }
 
-void crau_data(...)
+void crau_data(char *first_key_ptr CRAU_MAYBE_UNUSED, ...)
 {
 }
 

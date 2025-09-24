@@ -20,6 +20,19 @@ typedef uint64_t crau_context_t;
 /* A special context value used to represent a context which is not
  * associated with any parent nor children.
  */
+#ifndef CRAU_AUTO_CONTEXT
+# ifdef __GNUC__
+#  define CRAU_AUTO_CONTEXT (crau_context_t)__builtin_return_address(0)
+# elif defined(__CC_ARM)
+#  define CRAU_AUTO_CONTEXT (crau_context_t)__return_address()
+# else
+#  define CRAU_AUTO_CONTEXT CRAU_ORPHANED_CONTEXT
+# endif
+#endif /* CRAU_AUTO_CONTEXT */
+
+/* A special context value used to represent a context which is not
+ * associated with any parent nor children.
+ */
 #define CRAU_ORPHANED_CONTEXT ((crau_context_t)-1)
 
 /* Types of crypto-auditing event data. CRAU_WORD means an integer in
@@ -32,13 +45,13 @@ enum crau_data_type_t {
 	CRAU_BLOB,
 };
 
-/* Push a context (inferred from the call frame) onto the thread-local
+/* Push a context CONTEXT onto the thread-local
  * context stack. If the depth of the stack exceeds
  * CRAU_CONTEXT_STACK_DEPTH, the older element will be removed.
  *
  * This call shall be followed by a `crau_pop_context`.
  */
-void crau_push_context(void);
+void crau_push_context(crau_context_t context);
 
 /* Pop a context from the thread-local context stack. If the stack
  * is empty, it returns a CRAU_ORPHANED_CONTEXT.
@@ -50,13 +63,13 @@ crau_context_t crau_pop_context(void);
  */
 crau_context_t crau_current_context(void);
 
-/* Push a new context (inferred from the call frame) onto the
- * thread-local context stack, optionally emitting events through
- * varargs.
+/* Push a new context CONTEXT onto the thread-local context stack,
+ * optionally emitting events through varargs.
  *
  * Typical usage example is as follows:
  *
  * crau_new_context_with_data(
+ *   CRAU_AUTO_CONTEXT,
  *   "name", CRAU_STRING, "pk::sign",
  *   "pk::algorithm", CRAU_STRING, "mldsa",
  *   "pk::bits", CRAU_WORD, 1952 * 8,
@@ -66,12 +79,12 @@ crau_context_t crau_current_context(void);
  * older element will be removed.  This call shall be followed by a
  * `crau_pop_context`.
  */
-void crau_new_context_with_data(...);
+void crau_new_context_with_data(crau_context_t context, ...);
 
 /* Emit events through varargs, under the current thread-local
-   context. Unlike `crau_new_context_with_data`, this does not push a
-   new context.
+ * context. Unlike `crau_new_context_with_data`, this does not push a
+ * new context.
  */
-void crau_data(...);
+void crau_data(char *first_key_ptr, ...);
 
 #endif /* CRAU_CRAU_H */
