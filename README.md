@@ -21,7 +21,6 @@ application itself.
 ```c
 /* Public key signing operation starts (but the algorithm is not known yet) */
 crau_new_context_with_data(
-  CRAU_AUTO_CONTEXT,
   "name", CRAU_STRING, "pk::sign",
   NULL)
 ...

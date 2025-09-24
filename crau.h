@@ -95,6 +95,6 @@ void crau_push_context_with_data(crau_context_t context, ...);
  * context. Unlike `crau_new_context_with_data`, this does not push a
  * new context.
  */
-void crau_data(char *first_key_ptr, ...);
+void crau_data(const char *first_key_ptr, ...);
 
 #endif /* CRAU_CRAU_H */

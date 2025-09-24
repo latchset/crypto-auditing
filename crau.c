@@ -132,14 +132,14 @@ void crau_push_context_with_data(crau_context_t context, ...)
 	push_context(context);
 }
 
-void crau_data(char *first_key_ptr, ...)
+void crau_data(const char *first_key_ptr, ...)
 {
 	struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS];
 	size_t count;
 	va_list ap;
 
 	va_start(ap, first_key_ptr);
-	count = accumulate_datav(data, ap, first_key_ptr);
+	count = accumulate_datav(data, ap, (char *)first_key_ptr);
 	va_end(ap);
 
 	CRAU_DATA(crau_current_context(), data, count);
