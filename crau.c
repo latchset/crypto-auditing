@@ -32,7 +32,7 @@
 #include "macros.h"
 
 /* Avoid name clash with crau_data_type_t */
-#undef CRAU_DATA
+#undef CRAU_WORD
 #undef CRAU_STRING
 #undef CRAU_BLOB
 
@@ -62,9 +62,9 @@
 
 #ifndef CRAU_RETURN_ADDRESS
 # ifdef __GNUC__
-#  define CRAU_RETURN_ADDRESS __builtin_return_address(0)
+#  define CRAU_RETURN_ADDRESS (crau_context_t)__builtin_return_address(0)
 # elif defined(__CC_ARM)
-#  define CRAU_RETURN_ADDRESS __return_address()
+#  define CRAU_RETURN_ADDRESS (crau_context_t)__return_address()
 # else
 #  error "__builtin_return_address support is required; define CRAU_RETURN_ADDRESS"
 # endif
