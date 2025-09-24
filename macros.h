@@ -48,7 +48,7 @@
  * The VALUE_SIZE field is set depending on the type of the value. If
  * the value is a machine word, it is set to 0xfffffffe (= -2).  If
  * the value is a NUL-terminated string, it is set to 0xffffffff (=
- * -1). Otherwise, it it set to the actual size of the value.
+ * -1). Otherwise, it is set to the actual size of the value.
  */
 struct crypto_auditing_data {
 	char *key_ptr;
