@@ -17,6 +17,11 @@
  */
 typedef uint64_t crau_context_t;
 
+/* A special context value used to represent a context which is not
+ * associated with any parent nor children.
+ */
+#define CRAU_ORPHANED_CONTEXT ((crau_context_t)-1)
+
 /* Types of crypto-auditing event data. CRAU_WORD means an integer in
  * a machine word, CRAU_STRING means a NUL-terminated
  * string. CRAU_BLOB means an explicitly sized binary blob.
@@ -27,24 +32,29 @@ enum crau_data_type_t {
 	CRAU_BLOB,
 };
 
-/* Push a context CONTEXT onto the thread-local context stack.
+/* Push a context (inferred from the call frame) onto the thread-local
+ * context stack. If the depth of the stack exceeds
+ * CRAU_CONTEXT_STACK_DEPTH, the older element will be removed.
  *
- * This call must be followed by a `crau_pop_context`.
+ * This call shall be followed by a `crau_pop_context`.
  */
-void crau_push_context(crau_context_t context);
+void crau_push_context(void);
 
-/* Pop a context from the thread-local context stack. The stack must
- * not be empty.
+/* Pop a context from the thread-local context stack. If the stack
+ * is empty, it returns a CRAU_ORPHANED_CONTEXT.
  */
 crau_context_t crau_pop_context(void);
 
-/* Return the context currently active for this thread.
+/* Return the context currently active for this thread. If there is no
+ * active context, it returns a CRAU_ORPHANED_CONTEXT.
  */
 crau_context_t crau_current_context(void);
 
 /* Push a new context (inferred from the call frame) onto the
  * thread-local context stack, optionally emitting events through
- * varargs. Typical usage example is as follows:
+ * varargs.
+ *
+ * Typical usage example is as follows:
  *
  * crau_new_context_with_data(
  *   "name", CRAU_STRING, "pk::sign",
@@ -52,7 +62,9 @@ crau_context_t crau_current_context(void);
  *   "pk::bits", CRAU_WORD, 1952 * 8,
  *   NULL);
  *
- * This call must be followed by a `crau_pop_context`.
+ * If the depth of the stack exceeds CRAU_CONTEXT_STACK_DEPTH, the
+ * older element will be removed.  This call shall be followed by a
+ * `crau_pop_context`.
  */
 void crau_new_context_with_data(...);
 

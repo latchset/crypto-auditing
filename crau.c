@@ -17,10 +17,6 @@
  *
  * * CRAU_THREAD_LOCAL: thread-local modifier of the C language
  *   (default: auto-detected)
- *
- * * CRAU_MAYBE_UNUSED: an attribute to suppress warnings when a
- *   function argument is not used in the function body (default:
- *   auto-detected)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -36,7 +32,6 @@
 #undef CRAU_STRING
 #undef CRAU_BLOB
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
 
@@ -75,23 +70,19 @@ static CRAU_THREAD_LOCAL crau_context_t context_stack[CRAU_CONTEXT_STACK_DEPTH] 
 };
 static CRAU_THREAD_LOCAL size_t context_stack_top = 0;
 
-void crau_push_context(crau_context_t context)
+void crau_push_context(void)
 {
-	assert(context_stack_top < CRAU_CONTEXT_STACK_DEPTH);
-	context_stack[context_stack_top++] = context;
+	context_stack[context_stack_top++ % CRAU_CONTEXT_STACK_DEPTH] = CRAU_RETURN_ADDRESS;
 }
 
 crau_context_t crau_pop_context(void)
 {
-	assert(context_stack_top > 0);
-	return context_stack[--context_stack_top];
+	return context_stack_top == 0 ? CRAU_ORPHANED_CONTEXT : context_stack[--context_stack_top];
 }
 
 crau_context_t crau_current_context(void)
 {
-	if (context_stack_top == 0)
-		return ~0UL;
-	return context_stack[context_stack_top - 1];
+	return context_stack_top == 0 ? CRAU_ORPHANED_CONTEXT : context_stack[context_stack_top - 1];
 }
 
 static inline size_t
@@ -157,27 +148,18 @@ void crau_data(...)
 
 #else
 
-#ifndef CRAU_MAYBE_UNUSED
-# if defined(__has_c_attribute) && \
-  __has_c_attribute (__maybe_unused__)
-#  define CRAU_MAYBE_UNUSED [[__maybe_unused__]]
-# elif defined(__GNUC__)
-#  define CRAU_MAYBE_UNUSED __attribute__((__unused__))
-# endif
-#endif /* CRAU_MAYBE_UNUSED */
-
-void crau_push_context(crau_context_t context CRAU_MAYBE_UNUSED)
+void crau_push_context(void)
 {
 }
 
 crau_context_t crau_pop_context(void)
 {
-	return ~0UL;
+	return CRAU_ORPHANED_CONTEXT;
 }
 
 crau_context_t crau_current_context(void)
 {
-	return ~0UL;
+	return CRAU_ORPHANED_CONTEXT;
 }
 
 void crau_new_context_with_data(...)
