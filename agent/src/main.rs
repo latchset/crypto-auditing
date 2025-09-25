@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use anyhow::{bail, Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use bytes::BytesMut;
 use core::future::Future;
 use crypto_auditing::types::{ContextID, EventGroup};
@@ -14,9 +14,9 @@ use std::io::prelude::*;
 use std::mem::MaybeUninit;
 use std::path::Path;
 use tokio::io::AsyncReadExt;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 use tracing::{debug, info};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 mod config;
 mod log_writer;
@@ -180,12 +180,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Successfully waited
             if let Ok(res) = res {
-                if let Some(ref mut tracer) = tracer {
-                    if let Err(e) =
+                if let Some(ref mut tracer) = tracer
+                    && let Err(e) =
                         tracer.write(&writer.elapsed(), &encryption_key, buffer.as_ref())
-                    {
-                        info!(error = %e, "error writing trace");
-                    }
+                {
+                    info!(error = %e, "error writing trace");
                 }
 
                 let n = res?;

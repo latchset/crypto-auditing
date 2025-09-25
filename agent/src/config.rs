@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use anyhow::{anyhow, Context as _, Result};
-use clap::{arg, command, parser::ValueSource, value_parser, ArgAction, ArgMatches, ValueEnum};
+use anyhow::{Context as _, Result, anyhow};
+use clap::{ArgAction, ArgMatches, ValueEnum, arg, command, parser::ValueSource, value_parser};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;

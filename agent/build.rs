@@ -37,7 +37,7 @@ fn main() {
     SkeletonBuilder::new()
         .source(&src)
         .clang_args([OsStr::new("-I"), builddir.as_os_str()])
-        .build_and_generate(&builddir.join("audit.skel.rs"))
+        .build_and_generate(builddir.join("audit.skel.rs"))
         .unwrap();
     println!("cargo:rerun-if-changed={}", src.display());
 }

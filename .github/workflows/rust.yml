@@ -22,7 +22,7 @@ jobs:
     name: Fedora tests
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/fedora:40
+      image: registry.fedoraproject.org/fedora:42
       options: --privileged
     steps:
     - uses: actions/checkout@v4

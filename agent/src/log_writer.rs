@@ -2,20 +2,20 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use crate::config;
-use anyhow::{bail, Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use crypto_auditing::types::EventGroup;
 use probe::probe;
-use serde_cbor::{ser::IoWrite, Serializer};
+use serde_cbor::{Serializer, ser::IoWrite};
 use std::path::PathBuf;
-use time::{macros::format_description, OffsetDateTime};
+use time::{OffsetDateTime, macros::format_description};
 use tokio::time::{Duration, Instant};
 #[cfg(not(feature = "tokio-uring"))]
 use tokio::{
-    fs::{rename, File},
+    fs::{File, rename},
     io::AsyncWriteExt,
 };
 #[cfg(feature = "tokio-uring")]
-use tokio_uring::fs::{rename, File};
+use tokio_uring::fs::{File, rename};
 
 pub struct LogWriter {
     config: config::Config,
@@ -125,7 +125,7 @@ impl LogWriter {
         let mut counter = 0u64;
         while backup_log_file.exists() {
             counter += 1;
-            backup_log_file.set_extension(&counter.to_string());
+            backup_log_file.set_extension(counter.to_string());
         }
 
         rename(&self.config.log_file, &backup_log_file)

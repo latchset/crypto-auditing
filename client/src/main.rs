@@ -5,10 +5,10 @@ use anyhow::{Context as _, Result};
 use crypto_auditing::event_broker::Client;
 use futures::StreamExt;
 use std::fs::File;
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 use tokio::signal;
 use tracing::info;
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 mod config;
 

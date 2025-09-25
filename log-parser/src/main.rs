@@ -4,8 +4,8 @@
 use anyhow::{Context as _, Result};
 use clap::Parser;
 use crypto_auditing::types::{ContextID, Event, EventData, EventGroup};
-use serde::ser::{SerializeSeq, Serializer};
 use serde::Serialize;
+use serde::ser::{SerializeSeq, Serializer};
 use serde_cbor::de::Deserializer;
 use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     all_contexts.insert(*group.context(), context);
                 }
                 Event::Data { key, value } => {
-                    if all_contexts.get(group.context()).is_none() {
+                    if !all_contexts.contains_key(group.context()) {
                         // Either this library did not do a new_context for this context, or the
                         // log we have is truncated at the beginning. Just assume that this context
                         // has no parent and create a new one so we don't loose the information in

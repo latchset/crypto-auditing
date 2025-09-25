@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use crate::event_broker::{error::Result, SOCKET_PATH};
+use crate::event_broker::{SOCKET_PATH, error::Result};
 use crate::types::EventGroup;
 use futures::{
+    SinkExt, TryStreamExt,
     future::{self, AbortHandle},
     stream::Stream,
-    SinkExt, TryStreamExt,
 };
 use std::path::{Path, PathBuf};
 use tokio::net::UnixStream;
 use tokio::sync::mpsc::{self, Receiver, Sender};
-use tokio_serde::{formats::SymmetricalCbor, SymmetricallyFramed};
+use tokio_serde::{SymmetricallyFramed, formats::SymmetricalCbor};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracing::info;
@@ -122,12 +122,12 @@ impl Client {
                     }
                 };
 
-                if let Some(group) = group {
-                    if let Err(e) = inner.sender.send(group).await {
-                        info!(error = %e,
+                if let Some(group) = group
+                    && let Err(e) = inner.sender.send(group).await
+                {
+                    info!(error = %e,
                                   "unable to send event");
-                        break;
-                    }
+                    break;
                 }
             }
         });

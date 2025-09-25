@@ -3,7 +3,7 @@
 // Licensed under LGPL-2.1 or BSD-2-Clause.
 
 use core::task::{Context, Poll};
-use libbpf_rs::{query::MapInfoIter, Map, MapCore};
+use libbpf_rs::{Map, MapCore, query::MapInfoIter};
 use std::io::Result;
 use std::num::NonZeroUsize;
 use std::os::fd::{AsFd, AsRawFd, RawFd};
@@ -69,7 +69,7 @@ impl RingBuffer {
         len <<= 2;
         len >>= 2;
         len += BPF_RINGBUF_HDR_SZ;
-        (len + 7) / 8 * 8
+        len.div_ceil(8) * 8
     }
 }
 
