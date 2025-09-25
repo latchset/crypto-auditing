@@ -93,14 +93,13 @@ accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 	size_t count = 0;
 
 	for (; key_ptr != NULL && count < CRAU_MAX_DATA_ELEMS;
-	     key_ptr = va_arg(ap, char *)) {
+	     key_ptr = va_arg(ap, char *), count++) {
 		data[count].key_ptr = key_ptr;
 
 		switch (va_arg(ap, enum crau_data_type_t)) {
 		case CRAU_WORD:
 			data[count].value_ptr = (void *)va_arg(ap, intptr_t);
 			data[count].value_size = (unsigned long)-2;
-			count++;
 			break;
 		case CRAU_STRING:
 			data[count].value_ptr = (void *)va_arg(ap, char *);
@@ -109,7 +108,6 @@ accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 		case CRAU_BLOB:
 			data[count].value_ptr = va_arg(ap, void *);
 			data[count].value_size = va_arg(ap, unsigned long);
-			count++;
 			break;
 		}
 	}
