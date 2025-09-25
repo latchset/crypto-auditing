@@ -10,7 +10,7 @@ use std::process::{Child, Command};
 use std::thread;
 use std::time::Duration;
 use tempfile::tempdir;
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 fn fixture_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

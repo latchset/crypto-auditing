@@ -5,7 +5,7 @@
 use anyhow::bail;
 use anyhow::{Context as _, Result};
 use crypto_auditing::types::EventGroup;
-use futures::{future, stream::StreamExt, try_join, SinkExt, Stream, TryStreamExt};
+use futures::{SinkExt, Stream, TryStreamExt, future, stream::StreamExt, try_join};
 use inotify::{EventMask, EventStream, Inotify, WatchDescriptor, WatchMask};
 #[cfg(feature = "libsystemd")]
 use libsystemd::activation::receive_descriptors;
@@ -19,14 +19,14 @@ use std::os::fd::{FromRawFd, IntoRawFd};
 use std::os::unix::net::UnixListener as StdUnixListener;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::net::{unix::OwnedWriteHalf, UnixListener, UnixStream};
+use tokio::net::{UnixListener, UnixStream, unix::OwnedWriteHalf};
 use tokio::signal;
-use tokio::sync::{broadcast, mpsc, RwLock};
-use tokio_serde::{formats::SymmetricalCbor, SymmetricallyFramed};
+use tokio::sync::{RwLock, broadcast, mpsc};
+use tokio_serde::{SymmetricallyFramed, formats::SymmetricalCbor};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracing::{debug, info};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 mod config;
 

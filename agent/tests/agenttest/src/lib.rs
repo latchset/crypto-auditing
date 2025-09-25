@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2023 The crypto-auditing developers.
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use libbpf_rs::{
-    skel::{OpenSkel, SkelBuilder},
     Link, Map, OpenObject, RingBufferBuilder,
+    skel::{OpenSkel, SkelBuilder},
 };
 use std::mem::MaybeUninit;
 use std::path::Path;

@@ -89,7 +89,7 @@ impl EventGroup {
     {
         f(&mut self.context)?;
 
-        if let Some(Event::NewContext { ref mut parent, .. }) = self.events.last_mut() {
+        if let Some(Event::NewContext { parent, .. }) = self.events.last_mut() {
             f(parent)?;
         }
         Ok(())
@@ -114,17 +114,15 @@ impl EventGroup {
     /// Deserializes an event group from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
-        let context =
-            unsafe { format_context((*header).pid_tgid.into(), (*header).context.into()) };
-        let ktime = unsafe { Duration::from_nanos((*header).ktime.into()) };
+        let context = unsafe { format_context((*header).pid_tgid, (*header).context) };
+        let ktime = unsafe { Duration::from_nanos((*header).ktime) };
         let event = match unsafe { (*header).type_ } {
             audit_event_type_t::AUDIT_EVENT_NEW_CONTEXT => {
                 let raw_new_context = bytes.as_ptr() as *mut audit_new_context_event_st;
-                let parent = unsafe {
-                    format_context((*header).pid_tgid.into(), (*raw_new_context).parent.into())
-                };
+                let parent =
+                    unsafe { format_context((*header).pid_tgid, (*raw_new_context).parent) };
                 let origin = unsafe {
-                    (*raw_new_context).origin[..(*raw_new_context).origin_size as usize].to_vec()
+                    (&(*raw_new_context).origin)[..(*raw_new_context).origin_size as usize].to_vec()
                 };
                 EventGroup {
                     context,
@@ -145,7 +143,7 @@ impl EventGroup {
                             end: ktime,
                             events: vec![Event::Data {
                                 key: key.to_str()?.to_string(),
-                                value: EventData::Word((*raw_word_data).value.into()),
+                                value: EventData::Word((*raw_word_data).value),
                             }],
                         }
                     }
@@ -153,8 +151,8 @@ impl EventGroup {
                         let raw_string_data = bytes.as_ptr() as *mut audit_blob_data_event_st;
                         let key = CStr::from_ptr((*raw_string_data).base.key.as_ptr());
                         let len = (*raw_string_data).size as usize;
-                        let string =
-                            std::str::from_utf8(&(*raw_string_data).value[..len - 1])?.to_string();
+                        let string = std::str::from_utf8(&(&(*raw_string_data).value)[..len - 1])?
+                            .to_string();
                         EventGroup {
                             context,
                             start: ktime,
@@ -169,7 +167,7 @@ impl EventGroup {
                         let raw_blob_data = bytes.as_ptr() as *mut audit_blob_data_event_st;
                         let key = CStr::from_ptr((*raw_blob_data).base.key.as_ptr());
                         let len = (*raw_blob_data).size as usize;
-                        let data = (*raw_blob_data).value[..len].to_vec();
+                        let data = (&(*raw_blob_data).value)[..len].to_vec();
                         EventGroup {
                             context,
                             start: ktime,

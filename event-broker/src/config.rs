@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use anyhow::{anyhow, Context as _, Result};
-use clap::{arg, command, parser::ValueSource, value_parser, ArgMatches};
+use anyhow::{Context as _, Result, anyhow};
+use clap::{ArgMatches, arg, command, parser::ValueSource, value_parser};
 use crypto_auditing::event_broker::SOCKET_PATH;
 use std::fs;
 use std::path::{Path, PathBuf};
