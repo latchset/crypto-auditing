@@ -17,8 +17,8 @@
  */
 typedef uint64_t crau_context_t;
 
-/* A special context value used to represent a context which is not
- * associated with any parent nor children.
+/* A special context value used to represent a context which is
+ * automatically assigned based on the current call frame.
  */
 #ifndef CRAU_AUTO_CONTEXT
 # ifdef __GNUC__
@@ -45,16 +45,16 @@ enum crau_data_type_t {
 	CRAU_BLOB,
 };
 
-/* Push a context CONTEXT onto the thread-local
- * context stack. If the depth of the stack exceeds
- * CRAU_CONTEXT_STACK_DEPTH, the older element will be removed.
+/* Push a context CONTEXT onto the thread-local context stack. If the
+ * depth of the stack exceeds CRAU_CONTEXT_STACK_DEPTH, the older
+ * element will be removed.
  *
  * This call shall be followed by a `crau_pop_context`.
  */
 void crau_push_context(crau_context_t context);
 
-/* Pop a context from the thread-local context stack. If the stack
- * is empty, it returns a CRAU_ORPHANED_CONTEXT.
+/* Pop a context from the thread-local context stack. If the stack is
+ * empty, it returns a CRAU_ORPHANED_CONTEXT.
  */
 crau_context_t crau_pop_context(void);
 
