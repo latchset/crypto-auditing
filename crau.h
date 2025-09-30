@@ -15,16 +15,16 @@
  * where crypto-auditing events occur. This should be a unique
  * identifier within a thread.
  */
-typedef uint64_t crau_context_t;
+typedef long crau_context_t;
 
 /* A special context value used to represent a context which is
  * automatically assigned based on the current call frame.
  */
 #ifndef CRAU_AUTO_CONTEXT
 # ifdef __GNUC__
-#  define CRAU_AUTO_CONTEXT (crau_context_t)(uintptr_t)(char *)__builtin_return_address(0)
+#  define CRAU_AUTO_CONTEXT (crau_context_t)(intptr_t)(char *)__builtin_return_address(0)
 # elif defined(__CC_ARM)
-#  define CRAU_AUTO_CONTEXT (crau_context_t)(uintptr_t)(char *)__return_address()
+#  define CRAU_AUTO_CONTEXT (crau_context_t)(intptr_t)(char *)__return_address()
 # else
 #  define CRAU_AUTO_CONTEXT CRAU_ORPHANED_CONTEXT
 # endif

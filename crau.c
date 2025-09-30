@@ -85,12 +85,12 @@ crau_context_t crau_current_context(void)
 	return context_stack_top == 0 ? CRAU_ORPHANED_CONTEXT : context_stack[context_stack_top - 1];
 }
 
-static inline size_t
+static inline unsigned long
 accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 		 va_list ap,
 		 char *key_ptr)
 {
-	size_t count = 0;
+	unsigned long count = 0;
 
 	for (; key_ptr != NULL && count < CRAU_MAX_DATA_ELEMS;
 	     key_ptr = va_arg(ap, char *), count++) {
@@ -118,7 +118,7 @@ accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 void crau_push_context_with_data(crau_context_t context, ...)
 {
 	struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS];
-	size_t count;
+	unsigned long count;
 	va_list ap;
 
 	va_start(ap, context);
