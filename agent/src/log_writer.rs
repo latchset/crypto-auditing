@@ -43,10 +43,6 @@ impl LogWriter {
         })
     }
 
-    pub fn elapsed(&self) -> Duration {
-        self.instant.elapsed()
-    }
-
     pub fn timeout(&self) -> Duration {
         if self.groups.is_empty() {
             // No previous event, wait indefinitely

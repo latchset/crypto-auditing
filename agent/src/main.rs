@@ -2,10 +2,12 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result, bail};
-use bytes::BytesMut;
 use core::future::Future;
 use crypto_auditing::types::{ContextID, EventGroup};
-use libbpf_rs::skel::{OpenSkel, SkelBuilder};
+use libbpf_rs::{
+    RingBufferBuilder,
+    skel::{OpenSkel, SkelBuilder},
+};
 use openssl::{
     rand::rand_bytes,
     symm::{Cipher, Crypter, Mode},
@@ -13,15 +15,14 @@ use openssl::{
 use std::io::prelude::*;
 use std::mem::MaybeUninit;
 use std::path::Path;
-use tokio::io::AsyncReadExt;
-use tokio::time::{Duration, timeout};
+use std::sync::mpsc;
+use tokio::time::Instant;
 use tracing::{debug, info};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 mod config;
 mod log_writer;
 mod permissions;
-mod ringbuf;
 
 mod skel {
     include!(concat!(env!("OUT_DIR"), "/audit.skel.rs"));
@@ -54,23 +55,35 @@ fn encrypt_context(key: impl AsRef<[u8]>, context: &ContextID) -> Result<Context
     Ok(ciphertext.try_into().unwrap())
 }
 
-struct Tracer(Box<dyn std::io::Write>);
+struct Tracer {
+    writer: Box<dyn std::io::Write>,
+    instant: Instant,
+}
 
 impl Tracer {
     fn write(
         &mut self,
-        elapsed: &Duration,
         encryption_key: &[u8],
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let trace = serde_cbor::ser::to_vec(&(elapsed, encryption_key, data))?;
-        let _ = self.0.write(&trace)?;
-        self.0.flush()?;
+        let trace = serde_cbor::ser::to_vec(&(self.instant.elapsed(), encryption_key, data))?;
+        let _ = self.writer.write(&trace)?;
+        self.writer.flush()?;
         Ok(())
     }
 
     fn new(path: impl AsRef<Path>) -> Result<Self> {
-        Ok(Self(Box::new(std::fs::File::create(path.as_ref())?)))
+        Ok(Self {
+            writer: Box::new(std::fs::File::create(path.as_ref())?),
+            instant: Instant::now(),
+        })
+    }
+
+    fn empty() -> Result<Self> {
+        Ok(Self {
+            writer: Box::new(std::io::empty()),
+            instant: Instant::now(),
+        })
     }
 }
 
@@ -97,8 +110,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .try_init()?;
 
     let mut tracer = match config.trace_file {
-        Some(ref path) => Some(Tracer::new(path)?),
-        None => None,
+        Some(ref path) => Tracer::new(path)?,
+        None => Tracer::empty()?,
     };
 
     bump_memlock_rlimit()?;
@@ -165,51 +178,62 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rand_bytes(&mut encryption_key)?;
 
     start(async {
-        let mut rb = ringbuf::RingBuffer::new(&skel.maps.ringbuf);
+        let (event_tx, event_rx) = mpsc::sync_channel(256);
+        let mut builder = RingBufferBuilder::new();
+        builder.add(&skel.maps.ringbuf, |data| {
+            if let Err(e) = tracer.write(&encryption_key, data) {
+                info!(error = %e, "error writing trace");
+            }
+            match EventGroup::from_bytes(data) {
+                Ok(group) => {
+                    if let Err(e) = event_tx.send(group) {
+                        info!(error = %e, "error sending event group");
+                    }
+                }
+                Err(e) => info!(error = %e, "error deserializing event group"),
+            }
+            0
+        })?;
+        let rb = builder.build()?;
 
         if let Some((ref user, ref group)) = config.user {
             permissions::run_as(user, group)?;
         }
 
-        let mut buffer = BytesMut::with_capacity(1024);
         let mut writer = log_writer::LogWriter::from_config(&config).await?;
 
         loop {
-            buffer.clear();
-            let res = timeout(writer.timeout(), rb.read_buf(&mut buffer)).await;
+            if let Err(e) = rb.poll(writer.timeout()) {
+                info!(error = %e, "error polling ringbuf");
+                break;
+            }
 
-            // Successfully waited
-            if let Ok(res) = res {
-                if let Some(ref mut tracer) = tracer
-                    && let Err(e) =
-                        tracer.write(&writer.elapsed(), &encryption_key, buffer.as_ref())
-                {
-                    info!(error = %e, "error writing trace");
+            loop {
+                match event_rx.try_recv() {
+                    Ok(mut group) => {
+                        // Ignore groups from ourselves
+                        if group.matches_pid(unsafe { libc::getpid() }) {
+                            debug!("skipping group as pid matches the self");
+                            continue;
+                        }
+
+                        // Encrypt context IDs that appear in the event read
+                        if let Err(e) = group.encrypt_context(|context: &mut ContextID| {
+                            *context = encrypt_context(&encryption_key[..], context)?;
+                            Ok(())
+                        }) {
+                            info!(error = %e, "error encrypting context ID");
+                            continue;
+                        }
+
+                        writer.push_group(group);
+                    }
+                    Err(mpsc::TryRecvError::Empty) => break,
+                    Err(e) => {
+                        info!(error = %e, "error receiving event group");
+                        break;
+                    }
                 }
-
-                let n = res?;
-                if n == 0 {
-                    break;
-                }
-
-                let mut group = EventGroup::from_bytes(&buffer)?;
-
-                // Ignore groups from ourselves
-                if group.matches_pid(unsafe { libc::getpid() }) {
-                    debug!("skipping group as pid matches the self");
-                    continue;
-                }
-
-                // Encrypt context IDs that appear in the event read
-                if let Err(e) = group.encrypt_context(|context: &mut ContextID| {
-                    *context = encrypt_context(&encryption_key[..], context)?;
-                    Ok(())
-                }) {
-                    info!(error = %e, "error encrypting context ID");
-                    continue;
-                }
-
-                writer.push_group(group);
             }
 
             if !writer.coalesce_window_elapsed() && !writer.should_rotate() {
@@ -234,6 +258,7 @@ mod tests {
     use super::*;
     use serde_cbor::de::Deserializer;
     use std::path::Path;
+    use tokio::time::Duration;
 
     // This test assumes input.cborseq (trace file) and output.cborseq
     // (log file) in $CARGO_MANIFEST_DIR/../fixtures/normal.  These
