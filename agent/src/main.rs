@@ -15,8 +15,12 @@ use openssl::{
 use std::io::prelude::*;
 use std::mem::MaybeUninit;
 use std::path::Path;
-use std::sync::mpsc;
-use tokio::time::Instant;
+use tokio::{
+    io::{Interest, unix::AsyncFd},
+    runtime,
+    sync::mpsc,
+    time::Instant,
+};
 use tracing::{debug, info};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
@@ -178,7 +182,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rand_bytes(&mut encryption_key)?;
 
     start(async {
-        let (event_tx, event_rx) = mpsc::sync_channel(256);
+        let (event_tx, mut event_rx) = mpsc::channel::<EventGroup>(256);
+        let handle = runtime::Handle::current();
         let mut builder = RingBufferBuilder::new();
         builder.add(&skel.maps.ringbuf, |data| {
             if let Err(e) = tracer.write(&encryption_key, data) {
@@ -186,9 +191,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             match EventGroup::from_bytes(data) {
                 Ok(group) => {
-                    if let Err(e) = event_tx.send(group) {
-                        info!(error = %e, "error sending event group");
-                    }
+                    let event_tx2 = event_tx.clone();
+                    handle.spawn(async move {
+                        if let Err(e) = event_tx2.send(group).await {
+                            info!(error = %e, "error sending event group");
+                        }
+                    });
                 }
                 Err(e) => info!(error = %e, "error deserializing event group"),
             }
@@ -200,46 +208,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             permissions::run_as(user, group)?;
         }
 
+        let fd = AsyncFd::with_interest(rb.epoll_fd(), Interest::READABLE)?;
         let mut writer = log_writer::LogWriter::from_config(&config).await?;
 
         loop {
-            if let Err(e) = rb.poll(writer.timeout()) {
-                info!(error = %e, "error polling ringbuf");
-                break;
-            }
-
-            loop {
-                match event_rx.try_recv() {
-                    Ok(mut group) => {
-                        // Ignore groups from ourselves
-                        if group.matches_pid(unsafe { libc::getpid() }) {
-                            debug!("skipping group as pid matches the self");
-                            continue;
-                        }
-
-                        // Encrypt context IDs that appear in the event read
-                        if let Err(e) = group.encrypt_context(|context: &mut ContextID| {
-                            *context = encrypt_context(&encryption_key[..], context)?;
-                            Ok(())
-                        }) {
-                            info!(error = %e, "error encrypting context ID");
-                            continue;
-                        }
-
-                        writer.push_group(group);
+            tokio::select! {
+                res = fd.readable() => {
+                    match res {
+                        Ok(mut guard) => {
+                            guard.clear_ready();
+                            if let Err(e) = rb.consume() {
+                                info!(error = %e, "error polling ringbuf");
+                                break;
+                            }
+                        },
+                        Err(e) => {
+                            info!(error = %e, "error polling ringbuf");
+                            break;
+                        },
                     }
-                    Err(mpsc::TryRecvError::Empty) => break,
-                    Err(e) => {
-                        info!(error = %e, "error receiving event group");
-                        break;
+                },
+
+                Some(mut group) = event_rx.recv() => {
+                    // Ignore groups from ourselves
+                    if group.matches_pid(unsafe { libc::getpid() }) {
+                        debug!("skipping group as pid matches the self");
+                        continue;
                     }
-                }
+
+                    // Encrypt context IDs that appear in the event read
+                    if let Err(e) = group.encrypt_context(|context: &mut ContextID| {
+                        *context = encrypt_context(&encryption_key[..], context)?;
+                        Ok(())
+                    }) {
+                        info!(error = %e, "error encrypting context ID");
+                        continue;
+                    }
+
+                    writer.push_group(group);
+                },
+
+                () = tokio::time::sleep(writer.timeout()) => {},
             }
 
             if !writer.coalesce_window_elapsed() && !writer.should_rotate() {
                 continue;
             }
-
             if let Err(e) = writer.flush().await {
                 info!(error = %e, "error flushing events");
             }
