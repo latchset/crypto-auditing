@@ -23,7 +23,7 @@ page_size.workspace = true
 serde.workspace = true
 serde_cbor.workspace = true
 time = { workspace = true, features = ["formatting", "local-offset", "macros"] }
-tokio = { workspace = true, features = ["fs", "io-util", "signal"] }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "net", "signal"] }
 tokio-uring = { version = "0.4", optional = true }
 toml.workspace = true
 tracing.workspace = true
