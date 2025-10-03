@@ -15,8 +15,7 @@ use openssl::{
 use std::io::prelude::*;
 use std::mem::MaybeUninit;
 use std::path::Path;
-use std::sync::mpsc;
-use tokio::time::Instant;
+use tokio::{runtime, sync::mpsc, time::Instant};
 use tracing::{debug, info};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
@@ -178,7 +177,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rand_bytes(&mut encryption_key)?;
 
     start(async {
-        let (event_tx, event_rx) = mpsc::sync_channel(256);
+        let (event_tx, mut event_rx) = mpsc::channel::<EventGroup>(10);
+        let handle = runtime::Handle::current();
         let mut builder = RingBufferBuilder::new();
         builder.add(&skel.maps.ringbuf, |data| {
             if let Err(e) = tracer.write(&encryption_key, data) {
@@ -186,9 +186,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             match EventGroup::from_bytes(data) {
                 Ok(group) => {
-                    if let Err(e) = event_tx.send(group) {
-                        info!(error = %e, "error sending event group");
-                    }
+                    let event_tx2 = event_tx.clone();
+                    handle.spawn_blocking(move || {
+                        if let Err(e) = event_tx2.blocking_send(group) {
+                            info!(error = %e, "error sending event group");
+                        }
+                    });
                 }
                 Err(e) => info!(error = %e, "error deserializing event group"),
             }
@@ -228,7 +231,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                         writer.push_group(group);
                     }
-                    Err(mpsc::TryRecvError::Empty) => break,
+                    Err(mpsc::error::TryRecvError::Empty) => break,
                     Err(e) => {
                         info!(error = %e, "error receiving event group");
                         break;
