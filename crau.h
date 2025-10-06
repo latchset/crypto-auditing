@@ -183,9 +183,9 @@ crau_context_t crau_current_context(void)
 }
 
 static inline unsigned long
-_crau_accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
-		       va_list ap,
-		       char *key_ptr)
+crau_accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
+		      va_list ap,
+		      char *key_ptr)
 {
 	unsigned long count = 0;
 
@@ -219,7 +219,7 @@ void crau_push_context_with_data(crau_context_t context, ...)
 	va_list ap;
 
 	va_start(ap, context);
-	count = _crau_accumulate_datav(data, ap, va_arg(ap, char *));
+	count = crau_accumulate_datav(data, ap, va_arg(ap, char *));
 	va_end(ap);
 
 	CRAU_NEW_CONTEXT_WITH_DATA(context, crau_current_context(), data,
@@ -234,7 +234,7 @@ void crau_data(const char *first_key_ptr, ...)
 	va_list ap;
 
 	va_start(ap, first_key_ptr);
-	count = _crau_accumulate_datav(data, ap, (char *)first_key_ptr);
+	count = crau_accumulate_datav(data, ap, (char *)first_key_ptr);
 	va_end(ap);
 
 	CRAU_DATA(crau_current_context(), data, count);
