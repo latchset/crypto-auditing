@@ -14,7 +14,9 @@
 #ifdef ENABLE_CRYPTO_AUDITING
 
 #ifdef HAVE_SYS_SDT_H
-#include <sys/sdt.h>
+# include <sys/sdt.h>
+#else
+# error "define HAVE_SYS_SDT_H"
 #endif
 
 /* Introduce a new context CONTEXT, derived from the parent context PARENT.
