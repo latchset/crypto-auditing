@@ -269,7 +269,7 @@ void crau_push_context_with_data(crau_context_t context CRAU_MAYBE_UNUSED, ...)
 {
 }
 
-void crau_data(char *first_key_ptr CRAU_MAYBE_UNUSED, ...)
+void crau_data(const char *first_key_ptr CRAU_MAYBE_UNUSED, ...)
 {
 }
 
