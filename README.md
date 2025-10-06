@@ -7,16 +7,17 @@ application itself.
 
 ## Getting started
 
-1. Copy all source files (`crau.h`, `crau.c`, and `macros.h`) to your
-   application and add them to the build infrastructure (e.g., Makefiles).
-
 1. Define `ENABLE_CRYPTO_AUDITING` to 1, e.g., through `<config.h>`
 
-1. (Optional) Customize macros, e.g., `CRAU_CONTEXT_STACK_DEPTH` for
-   your needs. See the header of `crau.c` for the details.
+1. Include `<crau/crau.h>`. One of the C files should define
+   `CRAU_IMPLEMENTATION` to get the functions defined.
 
-1. Include "crau.h" and instrument the code as follows. See `crau.h`
-   or `macros.h` for the documentation:
+1. (Optional) Customize the implementation with configuration macros,
+   e.g., `CRAU_CONTEXT_STACK_DEPTH` for your needs. See
+   `<crau/crau.h>` for the details.
+
+1. Instrument the code as follows. See `<crau/crau.h>` and
+   `<crau/macros.h>` for the documentation:
 
 ```c
 /* Public key signing operation starts (but the algorithm is not known yet) */
@@ -64,6 +65,6 @@ Note that those macros don't do context management.
 
 ## License
 
-MIT
+MIT or Unlicense
 
 [crypto-auditing]: https://github.com/latchset/crypto-auditing

@@ -1,9 +1,11 @@
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: MIT OR Unlicense */
 /* Copyright (C) 2022-2025 The crypto-auditing developers. */
 
 /* This file defines a set of low-level macros to insert probe points
  * used for crypto-auditing into the application programs. See
  * <crau/crau.h> for a higher-level and more ergonomic interface.
+ *
+ * Unless ENABLE_CRYPTO_AUDITING is defined, all macros turn to no-op.
  */
 
 #ifndef CRAU_MACROS_H
