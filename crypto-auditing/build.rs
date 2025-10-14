@@ -12,7 +12,7 @@ fn main() {
         .header(HDR)
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .constified_enum_module("audit_event_type_t")
         .constified_enum_module("audit_data_type_t")
         // Finish the builder and generate the bindings.
