@@ -40,20 +40,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* An opaque type that represents a context (e.g., TLS handshake)
- * where crypto-auditing events occur. This should be a unique
- * identifier within a thread.
- */
-typedef long crau_context_t;
-
 /* A special context value used to represent a context which is
  * automatically assigned based on the current call frame.
  */
 #ifndef CRAU_AUTO_CONTEXT
 # ifdef __GNUC__
-#  define CRAU_AUTO_CONTEXT (crau_context_t)(intptr_t)(char *)__builtin_return_address(0)
+#  define CRAU_AUTO_CONTEXT (long)(intptr_t)(char *)__builtin_return_address(0)
 # elif defined(__CC_ARM)
-#  define CRAU_AUTO_CONTEXT (crau_context_t)(intptr_t)(char *)__return_address()
+#  define CRAU_AUTO_CONTEXT (long)(intptr_t)(char *)__return_address()
 # else
 #  define CRAU_AUTO_CONTEXT CRAU_ORPHANED_CONTEXT
 # endif
@@ -62,14 +56,14 @@ typedef long crau_context_t;
 /* A special context value used to represent a context which is not
  * associated with any parent nor children.
  */
-#define CRAU_ORPHANED_CONTEXT ((crau_context_t)-1)
+#define CRAU_ORPHANED_CONTEXT ((long)-1)
 
 #ifndef CRAU_CONTEXT_STACK_DEPTH
 # define CRAU_CONTEXT_STACK_DEPTH 3
 #endif /* CRAU_CONTEXT_STACK_DEPTH */
 
 struct crau_context_stack_st {
-	crau_context_t stack[CRAU_CONTEXT_STACK_DEPTH];
+	long stack[CRAU_CONTEXT_STACK_DEPTH];
 	size_t top;
 };
 
@@ -90,17 +84,17 @@ enum crau_data_type_t {
  * This call shall be followed by a `crau_pop_context`.
  */
 void crau_push_context(struct crau_context_stack_st *stack,
-		       crau_context_t context);
+		       long context);
 
 /* Pop a context from the given context stack STACK. If the stack is empty, it
  * returns a CRAU_ORPHANED_CONTEXT.
  */
-crau_context_t crau_pop_context(struct crau_context_stack_st *stack);
+long crau_pop_context(struct crau_context_stack_st *stack);
 
 /* Return the context currently active in the given context stack STACK. If
  * there is no active context, it returns a CRAU_ORPHANED_CONTEXT.
  */
-crau_context_t crau_current_context(struct crau_context_stack_st *stack);
+long crau_current_context(struct crau_context_stack_st *stack);
 
 /* Push a context CONTEXT onto the given context stack STACK,
  * optionally emitting events through varargs.
@@ -110,10 +104,10 @@ crau_context_t crau_current_context(struct crau_context_stack_st *stack);
  * `crau_pop_context`.
  */
 void crau_push_context_with_data(struct crau_context_stack_st *stack,
-				 crau_context_t context, ...);
+				 long context, ...);
 
 void crau_push_context_with_datav(struct crau_context_stack_st *stack,
-				  crau_context_t context, va_list ap);
+				  long context, va_list ap);
 
 /* Push a new context (inferred from the current call stack) onto the given
  * context stack STACK, optionally emitting events through varargs.
@@ -157,25 +151,25 @@ void crau_datav(struct crau_context_stack_st *stack, va_list ap);
 # ifdef ENABLE_CRYPTO_AUDITING
 
 static inline void push_context(struct crau_context_stack_st *stack,
-				crau_context_t context)
+				long context)
 {
 	stack->stack[stack->top++ % CRAU_CONTEXT_STACK_DEPTH] = context;
 }
 
 void crau_push_context(struct crau_context_stack_st *stack,
-		       crau_context_t context)
+		       long context)
 {
 	CRAU_NEW_CONTEXT(context, crau_current_context(stack));
 	push_context(stack, context);
 }
 
-crau_context_t crau_pop_context(struct crau_context_stack_st *stack)
+long crau_pop_context(struct crau_context_stack_st *stack)
 {
 	return stack->top == 0 ? CRAU_ORPHANED_CONTEXT :
 		stack->stack[--stack->top];
 }
 
-crau_context_t crau_current_context(struct crau_context_stack_st *stack)
+long crau_current_context(struct crau_context_stack_st *stack)
 {
 	return stack->top == 0 ? CRAU_ORPHANED_CONTEXT :
 		stack->stack[stack->top - 1];
@@ -212,7 +206,7 @@ crau_accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 }
 
 void crau_push_context_with_datav(struct crau_context_stack_st *stack,
-				  crau_context_t context, va_list ap)
+				  long context, va_list ap)
 {
 	struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS];
 	unsigned long count;
@@ -225,7 +219,7 @@ void crau_push_context_with_datav(struct crau_context_stack_st *stack,
 }
 
 void crau_push_context_with_data(struct crau_context_stack_st *stack,
-				 crau_context_t context, ...)
+				 long context, ...)
 {
 	va_list ap;
 
@@ -267,30 +261,30 @@ void crau_data(struct crau_context_stack_st *stack, ...)
 #  endif /* CRAU_MAYBE_UNUSED */
 
 void crau_push_context(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED,
-		       crau_context_t context CRAU_MAYBE_UNUSED)
+		       long context CRAU_MAYBE_UNUSED)
 {
 }
 
-crau_context_t
+long
 crau_pop_context(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED)
 {
 	return CRAU_ORPHANED_CONTEXT;
 }
 
-crau_context_t
+long
 crau_current_context(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED)
 {
 	return CRAU_ORPHANED_CONTEXT;
 }
 
 void crau_push_context_with_datav(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED,
-				  crau_context_t context CRAU_MAYBE_UNUSED,
+				  long context CRAU_MAYBE_UNUSED,
 				  va_list ap CRAU_MAYBE_UNUSED)
 {
 }
 
 void crau_push_context_with_data(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED,
-				 crau_context_t context CRAU_MAYBE_UNUSED, ...)
+				 long context CRAU_MAYBE_UNUSED, ...)
 {
 }
 

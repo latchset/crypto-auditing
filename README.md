@@ -53,13 +53,13 @@ defined in `macros.h`:
 ```c
 /* Public key signing operation starts (but the algorithm is not known yet) */
 CRAU_NEW_CONTEXT_WITH_DATAV(
-  (crau_context_t)this_function,
-  (crau_context_t)parent_function,
+  (long)this_function,
+  (long)parent_function,
   CRAU_STRING_DATA("name", "pk::sign"));
 ...
 /* Signing algorithm and bits are known at this point */
 CRAU_DATAV(
-  (crau_context_t)this_function,
+  (long)this_function,
   CRAU_STRING_DATA("pk::algorithm", "mldsa"),
   CRAU_WORD_DATA("pk::bits", 1952 * 8))
 
