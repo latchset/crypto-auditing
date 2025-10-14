@@ -180,6 +180,7 @@ crau_accumulate_datav(struct crypto_auditing_data data[CRAU_MAX_DATA_ELEMS],
 		      va_list ap)
 {
 	unsigned long count = 0;
+	char *key_ptr;
 
 	for (key_ptr = va_arg(ap, char *);
 	     key_ptr != NULL && count < CRAU_MAX_DATA_ELEMS;
@@ -215,7 +216,7 @@ void crau_push_context_with_datav(struct crau_context_stack_st *stack,
 
 	CRAU_NEW_CONTEXT_WITH_DATA(context, crau_current_context(stack), data,
 				   count);
-	push_context(context);
+	push_context(stack, context);
 }
 
 void crau_push_context_with_data(struct crau_context_stack_st *stack,
@@ -245,8 +246,6 @@ void crau_data(struct crau_context_stack_st *stack, ...)
 	va_start(ap, stack);
 	crau_datav(stack, ap);
 	va_end(ap);
-
-	CRAU_DATA(crau_current_context(stack), data, count);
 }
 
 # else
