@@ -182,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rand_bytes(&mut encryption_key)?;
 
     start(async {
-        let (event_tx, mut event_rx) = mpsc::channel::<EventGroup>(256);
+        let (event_tx, mut event_rx) = mpsc::unbounded_channel::<EventGroup>();
         let handle = runtime::Handle::current();
         let mut builder = RingBufferBuilder::new();
         builder.add(&skel.maps.ringbuf, |data| {
@@ -193,7 +193,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(group) => {
                     let event_tx2 = event_tx.clone();
                     handle.spawn(async move {
-                        if let Err(e) = event_tx2.send(group).await {
+                        if let Err(e) = event_tx2.send(group) {
                             info!(error = %e, "error sending event group");
                         }
                     });
