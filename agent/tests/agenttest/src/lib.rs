@@ -37,7 +37,7 @@ pub fn attach_bpf<'obj>(
     let skel_builder = AgentSkelBuilder::default();
 
     let open_skel = skel_builder.open(storage)?;
-    let mut skel = open_skel.load()?;
+    let skel = open_skel.load()?;
 
     let link = skel
         .progs
