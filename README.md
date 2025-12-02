@@ -204,7 +204,7 @@ You can open the generated `flamegraph.html` with your browser.
 ## License
 
 - `agent/src/bpf/audit.bpf.c`: GPL-2.0-or-later
-- `dist/audit.h`: MIT
+- `dist/crau/*`: MIT OR Unlicense
 - `scripts/flamegraph.py`: GPL-2.0-only
 - everything else: GPL-3.0-or-later
 
