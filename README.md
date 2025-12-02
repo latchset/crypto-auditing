@@ -71,6 +71,6 @@ Note that those macros don't do context management.
 
 ## License
 
-MIT or Unlicense
+MIT OR Unlicense
 
 [crypto-auditing]: https://github.com/latchset/crypto-auditing
