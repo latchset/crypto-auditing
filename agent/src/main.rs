@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let skel_builder = AuditSkelBuilder::default();
     let mut storage = MaybeUninit::uninit();
     let open_skel = skel_builder.open(&mut storage)?;
-    let mut skel = open_skel.load()?;
+    let skel = open_skel.load()?;
 
     let mut links = Vec::new();
     for library in &config.library {
