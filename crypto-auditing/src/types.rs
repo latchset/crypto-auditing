@@ -114,13 +114,15 @@ impl EventGroup {
     /// Deserializes an event group from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
-        let context = unsafe { format_context((*header).pid_tgid, (*header).context) };
-        let ktime = unsafe { Duration::from_nanos((*header).ktime) };
+        let context =
+            unsafe { format_context((*header).pid_tgid.into(), (*header).context.into()) };
+        let ktime = unsafe { Duration::from_nanos((*header).ktime.into()) };
         let event = match unsafe { (*header).type_ } {
             audit_event_type_t::AUDIT_EVENT_NEW_CONTEXT => {
                 let raw_new_context = bytes.as_ptr() as *mut audit_new_context_event_st;
-                let parent =
-                    unsafe { format_context((*header).pid_tgid, (*raw_new_context).parent) };
+                let parent = unsafe {
+                    format_context((*header).pid_tgid.into(), (*raw_new_context).parent.into())
+                };
                 let origin = unsafe {
                     (&(*raw_new_context).origin)[..(*raw_new_context).origin_size as usize].to_vec()
                 };
@@ -143,7 +145,7 @@ impl EventGroup {
                             end: ktime,
                             events: vec![Event::Data {
                                 key: key.to_str()?.to_string(),
-                                value: EventData::Word((*raw_word_data).value),
+                                value: EventData::Word((*raw_word_data).value.into()),
                             }],
                         }
                     }
