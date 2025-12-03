@@ -15,7 +15,7 @@ clap = { workspace = true, features = ["cargo", "derive"] }
 crypto-auditing.workspace = true
 futures.workspace = true
 inotify.workspace = true
-libsystemd = { version = "0.7", optional = true }
+libsystemd = { version = "0.7.2", optional = true }
 serde_cbor.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tokio-serde.workspace = true
