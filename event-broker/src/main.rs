@@ -144,23 +144,18 @@ impl Publisher {
 
     #[cfg(feature = "libsystemd")]
     async fn get_std_listener(&self) -> Result<StdUnixListener> {
-        match receive_descriptors(false) {
-            Ok(mut descriptors) => {
-                if descriptors.len() > 1 {
-                    bail!("too many file descriptors");
-                } else if descriptors.is_empty() {
-                    bail!("no file descriptors received");
-                }
-                let fd = descriptors.pop().unwrap().into_raw_fd();
-                let mut activated = self.activated.write().await;
-                *activated = true;
-                Ok(unsafe { StdUnixListener::from_raw_fd(fd) })
-            }
-            Err(e) => {
-                info!(error = %e, "unable to receive file descriptors");
-                Ok(StdUnixListener::bind(&self.socket_path)?)
-            }
+        let mut descriptors =
+            receive_descriptors(false).with_context(|| "unable to receive file descriptors")?;
+        if descriptors.len() > 1 {
+            bail!("too many file descriptors");
+        } else if descriptors.is_empty() {
+            info!("no file descriptors received");
+            return Ok(StdUnixListener::bind(&self.socket_path)?);
         }
+        let fd = descriptors.pop().unwrap().into_raw_fd();
+        let mut activated = self.activated.write().await;
+        *activated = true;
+        Ok(unsafe { StdUnixListener::from_raw_fd(fd) })
     }
 
     #[cfg(not(feature = "libsystemd"))]
