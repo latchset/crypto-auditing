@@ -18,12 +18,14 @@ programs = \
 	${TARGETDIR}/${PROFILE}/crau-agent \
 	${TARGETDIR}/${PROFILE}/crau-client \
 	${TARGETDIR}/${PROFILE}/crau-event-broker \
-	${TARGETDIR}/${PROFILE}/crau-log-parser
+	${TARGETDIR}/${PROFILE}/crau-log-parser \
+	${TARGETDIR}/${PROFILE}/crau-monitor
 
 conffiles = \
 	dist/conf/agent.conf \
 	dist/conf/client.conf \
-	dist/conf/event-broker.conf
+	dist/conf/event-broker.conf \
+	dist/conf/monitor.conf
 
 .PHONY: all
 all: $(programs)
