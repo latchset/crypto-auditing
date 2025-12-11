@@ -48,7 +48,7 @@ async fn test_event_broker() {
         .try_init()
         .expect("unable to initialize subscriber");
 
-    let event_broker_path = target_dir().join("crypto-auditing-event-broker");
+    let event_broker_path = target_dir().join("crau-event-broker");
     let test_dir = tempdir().expect("unable to create temporary directory");
 
     let log_path = test_dir.path().join("agent.log");
