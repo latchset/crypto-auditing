@@ -27,3 +27,7 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [dev-dependencies]
 tempfile.workspace = true
+
+[[bin]]
+name = "crau-event-broker"
+path = "src/event_broker.rs"

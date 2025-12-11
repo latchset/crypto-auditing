@@ -15,10 +15,10 @@ endif
 systemdsystemunitdir := $(shell pkg-config systemd --variable=systemdsystemunitdir)
 
 programs = \
-	${TARGETDIR}/${PROFILE}/crypto-auditing-agent \
-	${TARGETDIR}/${PROFILE}/crypto-auditing-client \
-	${TARGETDIR}/${PROFILE}/crypto-auditing-event-broker \
-	${TARGETDIR}/${PROFILE}/crypto-auditing-log-parser
+	${TARGETDIR}/${PROFILE}/crau-agent \
+	${TARGETDIR}/${PROFILE}/crau-client \
+	${TARGETDIR}/${PROFILE}/crau-event-broker \
+	${TARGETDIR}/${PROFILE}/crau-log-parser
 
 conffiles = \
 	dist/conf/agent.conf \
@@ -45,8 +45,9 @@ install: install-programs
 	for f in $(conffiles); do \
 		install -D -m 644 -S .orig -t /etc/crypto-auditing "$$f"; \
 	done
-	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crypto-auditing-agent.service
-	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crypto-auditing-event-broker.service
+	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crau-agent.service
+	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crau-event-broker.service
+	install -D -m 644 -t ${DESTDIR}$(systemdsystemunitdir) dist/systemd/system/crau-event-broker.socket
 	install -d ${DESTDIR}/run/crypto-auditing
 	install -d ${DESTDIR}/var/log/crypto-auditing
 

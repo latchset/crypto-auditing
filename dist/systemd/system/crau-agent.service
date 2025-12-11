@@ -5,7 +5,7 @@ StartLimitBurst=5
 After=local-fs.target systemd-tmpfiles-setup.service
 
 [Service]
-ExecStart=/usr/bin/crypto-auditing-agent
+ExecStart=/usr/bin/crau-agent
 KillSignal=SIGINT
 TimeoutSec=60s
 Restart=on-failure

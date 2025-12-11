@@ -37,3 +37,7 @@ libbpf-cargo.workspace = true
 tempfile.workspace = true
 plain.workspace = true
 agenttest = { path = "tests/agenttest" }
+
+[[bin]]
+name = "crau-agent"
+path = "src/agent.rs"

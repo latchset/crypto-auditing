@@ -47,7 +47,7 @@ impl Drop for AgentProcess {
 fn test_probe_no_coalesce() {
     bump_memlock_rlimit().expect("unable to bump memlock rlimit");
 
-    let agent_path = target_dir().join("crypto-auditing-agent");
+    let agent_path = target_dir().join("crau-agent");
     let log_dir = tempdir().expect("unable to create temporary directory");
     let log_path = log_dir.path().join("agent.log");
     let process = Command::new(&agent_path)

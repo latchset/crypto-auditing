@@ -57,12 +57,12 @@ $ cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/src/bpf
 $ sudo groupadd crypto-auditing
 $ sudo useradd -g crypto-auditing
 ```
-2. Modify systemd configuration for agent in `/lib/systemd/system/crypto-auditing-agent.service`:
+2. Modify systemd configuration for agent in `/lib/systemd/system/crau-agent.service`:
 ```ini
 User=crypto-auditing
 Group=crypto-auditing
 ```
-3. Modify systemd configuration for event-broker in `/lib/systemd/system/crypto-auditing-event-broker.socket`:
+3. Modify systemd configuration for event-broker in `/lib/systemd/system/crau-event-broker.socket`:
 ```ini
 SocketUser=crypto-auditing
 SocketGroup=crypto-auditing
@@ -76,13 +76,13 @@ user = "crypto-auditing:crypto-auditing"
 5. Enable agent and event-broker
 ```console
 $ sudo systemctl daemon-reload
-$ sudo systemctl start crypto-auditing-agent.service
-$ sudo systemctl start crypto-auditing-event-broker.socket
+$ sudo systemctl start crau-agent.service
+$ sudo systemctl start crau-event-broker.socket
 ```
 6. Connect to event-broker with client
 ```console
-$ crypto-auditing-client --scope tls --format json
-$ crypto-auditing-client --scope tls --format cbor --output audit.cborseq
+$ crau-client --scope tls --format json
+$ crau-client --scope tls --format cbor --output audit.cborseq
 ```
 7. On another terminal, run any commands using the instrumented library
 ```console
@@ -96,9 +96,9 @@ $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556 --priori
 
 In the above example, client stores logs as a sequence of
 CBOR objects, which can be parsed and printed as a tree with the
-`crypto-auditing-log-parser` executable:
+`crau-log-parser` executable:
 ```console
-$ crypto-auditing-log-parser audit.cborseq
+$ crau-log-parser audit.cborseq
 [
   {
     "context": "33acb8e6ccc65bb285bd2f84cac3bf80",
@@ -195,7 +195,7 @@ From the tree output, a flamegraph can be produced with the
 `scripts/flamegraph.py`:
 
 ```console
-$ crypto-auditing-log-parser audit.cborseq | python scripts/flamegraph.py -
+$ crau-log-parser audit.cborseq | python scripts/flamegraph.py -
 dumping data to flamegraph.html
 ```
 
