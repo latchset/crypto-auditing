@@ -23,7 +23,7 @@ The design documents can be found from the following links:
 ```console
 $ git clone --depth=1 -b wip/usdt https://gitlab.com/gnutls/gnutls.git
 $ ./bootstrap
-$ ./configure --prefix=/path/to/installation
+$ ./configure --prefix=/path/to/installation --enable-crypto-auditing
 $ make -j$(nproc)
 $ sudo make install
 ```
@@ -38,16 +38,6 @@ $ make
 5. Install the programs with `make install`
 ```console
 $ sudo make install
-```
-
-The first step requires `agent/src/bpf/vmlinux.h` to be populated. By
-default it is done through BTF dump from the running kernel with
-`bpftool`, but if it is not supported in your system, it is possible
-to use `vmlinux.h` included in the `kernel-devel` package:
-
-```console
-$ sudo dnf install kernel-devel
-$ cp $(rpm -ql kernel-devel | grep '/vmlinux.h$' | tail -1) agent/src/bpf
 ```
 
 ## Running
@@ -73,16 +63,14 @@ SocketMode=0660
 library = ["/path/to/installation/lib64/libgnutls.so.30"]
 user = "crypto-auditing:crypto-auditing"
 ```
-5. Enable agent and event-broker
+5. Enable agent
 ```console
 $ sudo systemctl daemon-reload
 $ sudo systemctl start crau-agent.service
-$ sudo systemctl start crau-event-broker.socket
 ```
-6. Connect to event-broker with client
+6. Run monitor
 ```console
-$ crau-client --scope tls --format json
-$ crau-client --scope tls --format cbor --output audit.cborseq
+$ crau-monitor
 ```
 7. On another terminal, run any commands using the instrumented library
 ```console
