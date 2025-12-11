@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use serde::{Deserialize, Serialize, ser::{SerializeSeq, Serializer}};
+use serde::{
+    Deserialize, Serialize,
+    ser::{SerializeSeq, Serializer},
+};
 use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
