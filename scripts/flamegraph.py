@@ -149,7 +149,8 @@ package, specify an existing flame graph template
     def parse_span(self, parent, span):
         events = span.get("events", {})
         name = events.pop("name", "unknown")
-        name = f"{name} [{self.format_details(name, events)}]"
+        details = self.format_details(name, events)
+        name = f"{name} [{details}]" if details else f"{name}"
 
         node = self.find_or_create_node(parent, name, "")
         node.value += 1
