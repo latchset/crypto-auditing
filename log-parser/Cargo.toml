@@ -19,5 +19,5 @@ toml.workspace = true
 pager = "0.16"
 
 [[bin]]
-name = "crau-log-parser"
-path = "src/log_parser.rs"
+name = "crau-query"
+path = "src/query.rs"
