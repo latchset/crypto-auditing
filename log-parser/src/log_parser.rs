@@ -3,15 +3,18 @@
 
 use anyhow::{Context as _, Result};
 use crypto_auditing::types::{Context, ContextID, Event, EventGroup};
+use pager::Pager;
 use serde_cbor::de::Deserializer;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::io::{self, Write};
 use std::rc::Rc;
 
 mod config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
+    Pager::new().setup();
 
     let log_file = std::fs::File::open(&config.log_file)
         .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
@@ -67,6 +70,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    println!("{}", serde_json::to_string_pretty(&root_contexts).unwrap());
+    let content = serde_json::to_string_pretty(&root_contexts)?;
+    if let Err(e) = io::stdout().write_all(content.as_bytes()) {
+        if e.kind() != io::ErrorKind::BrokenPipe {
+            return Err(Box::new(e));
+        }
+    }
     Ok(())
 }
