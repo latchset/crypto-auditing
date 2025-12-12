@@ -125,12 +125,7 @@ package, specify an existing flame graph template
             for event in events:
                 if event.startswith("tls::ext::"):
                     details.append(event[len("tls::ext::"):])
-        elif name.startswith("tls::certificate_"):
-            if "tls::signature_algorithm" in events:
-                details.append(
-                    SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"],
-                                          "unknown signature algorithm"))
-        elif name.startswith("tls::certificate_"):
+        elif name in ["tls::sign", "tls::verify"]:
             if "tls::signature_algorithm" in events:
                 details.append(
                     SIGNATURE_SCHEMES.get(events["tls::signature_algorithm"],
