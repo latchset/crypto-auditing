@@ -159,7 +159,10 @@ package, specify an existing flame graph template
 
     def parse_spans(self, parent, spans):
         for span in spans:
-            self.parse_span(parent, span)
+            children = span.get("spans", [])
+            node = self.parse_span(parent, span)
+            if len(children) > 0:
+                self.parse_spans(node, children)
 
     def run(self):
         spans = json.load(self.args.input)
