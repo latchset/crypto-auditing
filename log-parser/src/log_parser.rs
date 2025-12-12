@@ -3,45 +3,12 @@
 
 use anyhow::{Context as _, Result};
 use clap::Parser;
-use crypto_auditing::types::{ContextID, Event, EventData, EventGroup};
-use serde::Serialize;
-use serde::ser::{SerializeSeq, Serializer};
+use crypto_auditing::types::{Context, ContextID, Event, EventGroup};
 use serde_cbor::de::Deserializer;
-use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::time::Duration;
-
-fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    V: Serialize,
-{
-    let mut seq = serializer.serialize_seq(Some(source.len()))?;
-    for value in source.values() {
-        seq.serialize_element(value)?;
-    }
-    seq.end()
-}
-
-#[serde_as]
-#[derive(Default, Serialize)]
-struct Context {
-    #[serde_as(as = "Hex")]
-    context: ContextID,
-    #[serde_as(as = "Hex")]
-    origin: Vec<u8>,
-    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
-    start: Duration,
-    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
-    end: Duration,
-    events: BTreeMap<String, EventData>,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    #[serde(serialize_with = "only_values")]
-    spans: BTreeMap<ContextID, Rc<RefCell<Context>>>,
-}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
