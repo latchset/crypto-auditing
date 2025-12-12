@@ -137,6 +137,12 @@ package, specify an existing flame graph template
             if "tls::group" in events:
                 details.append(SUPPORTED_GROUPS.get(events["tls::group"],
                                                     "unknown group"))
+        elif name in ["pk::sign", "pk::verify",
+                      "pk::generate", "pk::derive",
+                      "pk::encapsulate", "pk::decapsulate",
+                      "pk::encrypt", "pk::decrypt"]:
+            if "pk::algorithm" in events:
+                details.append(events["pk::algorithm"])
 
         return ', '.join(details)
 
