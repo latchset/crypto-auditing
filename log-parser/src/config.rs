@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use toml::{Table, Value};
 
-const CONFIG: &str = "/etc/crypto-auditing/log-parser.conf";
+const CONFIG: &str = "/etc/crypto-auditing/query.conf";
 const LOG: &str = "/var/log/crypto-auditing/audit.cborseq";
 
 #[derive(Debug)]
