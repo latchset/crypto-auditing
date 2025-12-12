@@ -1,14 +1,46 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
+use serde::{Deserialize, Serialize, ser::{SerializeSeq, Serializer}};
+use serde_with::{hex::Hex, serde_as};
+use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::ffi::CStr;
+use std::rc::Rc;
 use std::time::Duration;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 pub type ContextID = [u8; 16];
+
+fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+    V: Serialize,
+{
+    let mut seq = serializer.serialize_seq(Some(source.len()))?;
+    for value in source.values() {
+        seq.serialize_element(value)?;
+    }
+    seq.end()
+}
+
+#[serde_as]
+#[derive(Debug, Default, Serialize)]
+pub struct Context {
+    #[serde_as(as = "Hex")]
+    pub context: ContextID,
+    #[serde_as(as = "Hex")]
+    pub origin: Vec<u8>,
+    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
+    pub start: Duration,
+    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
+    pub end: Duration,
+    pub events: BTreeMap<String, EventData>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    #[serde(serialize_with = "only_values")]
+    pub spans: BTreeMap<ContextID, Rc<RefCell<Context>>>,
+}
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -48,7 +80,7 @@ pub struct EventGroup {
     events: Vec<Event>,
 }
 
-fn format_context(pid_tgid: u64, context: i64) -> ContextID {
+fn format_context_id(pid_tgid: u64, context: i64) -> ContextID {
     let mut result: ContextID = Default::default();
     result[..8].copy_from_slice(&u64::to_le_bytes(pid_tgid));
     result[8..].copy_from_slice(&i64::to_le_bytes(context));
@@ -115,13 +147,13 @@ impl EventGroup {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
         let context =
-            unsafe { format_context((*header).pid_tgid.into(), (*header).context.into()) };
+            unsafe { format_context_id((*header).pid_tgid.into(), (*header).context.into()) };
         let ktime = unsafe { Duration::from_nanos((*header).ktime.into()) };
         let event = match unsafe { (*header).type_ } {
             audit_event_type_t::AUDIT_EVENT_NEW_CONTEXT => {
                 let raw_new_context = bytes.as_ptr() as *mut audit_new_context_event_st;
                 let parent = unsafe {
-                    format_context((*header).pid_tgid.into(), (*raw_new_context).parent.into())
+                    format_context_id((*header).pid_tgid.into(), (*raw_new_context).parent.into())
                 };
                 let origin = unsafe {
                     (&(*raw_new_context).origin)[..(*raw_new_context).origin_size as usize].to_vec()
