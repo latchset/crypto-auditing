@@ -423,6 +423,7 @@ dependencies = [
  "serde_cbor",
  "serde_json",
  "serde_with",
+ "toml",
 ]
 
 [[package]]

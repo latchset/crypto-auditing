@@ -25,6 +25,7 @@ conffiles = \
 	dist/conf/agent.conf \
 	dist/conf/client.conf \
 	dist/conf/event-broker.conf \
+	dist/conf/log-parser.conf \
 	dist/conf/monitor.conf
 
 .PHONY: all

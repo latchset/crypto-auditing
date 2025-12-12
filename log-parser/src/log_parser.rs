@@ -2,26 +2,19 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use clap::Parser;
 use crypto_auditing::types::{Context, ContextID, Event, EventGroup};
 use serde_cbor::de::Deserializer;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 use std::rc::Rc;
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-#[command(about = "Primary log parser for crypto-auditing")]
-struct Cli {
-    /// Path to log file to parse
-    log_path: PathBuf,
-}
+mod config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::parse();
-    let log_file = std::fs::File::open(&cli.log_path)
-        .with_context(|| format!("unable to read file `{}`", cli.log_path.display()))?;
+    let config = config::Config::new()?;
+
+    let log_file = std::fs::File::open(&config.log_file)
+        .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
     let mut all_contexts: BTreeMap<ContextID, Rc<RefCell<Context>>> = BTreeMap::new();
     let mut root_contexts = Vec::new();
     for group in Deserializer::from_reader(&log_file).into_iter::<EventGroup>() {
