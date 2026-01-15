@@ -2,59 +2,22 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use clap::Parser;
-use crypto_auditing::types::{ContextID, Event, EventData, EventGroup};
-use serde::Serialize;
-use serde::ser::{SerializeSeq, Serializer};
+use crypto_auditing::types::{Context, ContextID, Event, EventGroup};
+use pager::Pager;
 use serde_cbor::de::Deserializer;
-use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::io::{self, Write};
 use std::rc::Rc;
-use std::time::Duration;
 
-fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    V: Serialize,
-{
-    let mut seq = serializer.serialize_seq(Some(source.len()))?;
-    for value in source.values() {
-        seq.serialize_element(value)?;
-    }
-    seq.end()
-}
-
-#[serde_as]
-#[derive(Default, Serialize)]
-struct Context {
-    #[serde_as(as = "Hex")]
-    context: ContextID,
-    #[serde_as(as = "Hex")]
-    origin: Vec<u8>,
-    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
-    start: Duration,
-    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
-    end: Duration,
-    events: BTreeMap<String, EventData>,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    #[serde(serialize_with = "only_values")]
-    spans: BTreeMap<ContextID, Rc<RefCell<Context>>>,
-}
-
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-#[command(about = "Primary log parser for crypto-auditing")]
-struct Cli {
-    /// Path to log file to parse
-    log_path: PathBuf,
-}
+mod config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::parse();
-    let log_file = std::fs::File::open(&cli.log_path)
-        .with_context(|| format!("unable to read file `{}`", cli.log_path.display()))?;
+    let config = config::Config::new()?;
+    Pager::new().setup();
+
+    let log_file = std::fs::File::open(&config.log_file)
+        .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
     let mut all_contexts: BTreeMap<ContextID, Rc<RefCell<Context>>> = BTreeMap::new();
     let mut root_contexts = Vec::new();
     for group in Deserializer::from_reader(&log_file).into_iter::<EventGroup>() {
@@ -107,6 +70,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    println!("{}", serde_json::to_string_pretty(&root_contexts).unwrap());
+    let content = serde_json::to_string_pretty(&root_contexts)?;
+    if let Err(e) = io::stdout().write_all(content.as_bytes()) {
+        if e.kind() != io::ErrorKind::BrokenPipe {
+            return Err(Box::new(e));
+        }
+    }
     Ok(())
 }
