@@ -388,6 +388,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto-auditing-event-monitor"
+version = "0.2.4"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crypto-auditing",
+ "futures",
+ "hex",
+ "inotify",
+ "serde",
+ "serde_cbor",
+ "serde_json",
+ "serde_with",
+ "tempfile",
+ "tokio",
+ "tokio-serde",
+ "tokio-stream",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "crypto-auditing-log-parser"
 version = "0.2.4"
 dependencies = [
