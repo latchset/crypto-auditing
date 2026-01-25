@@ -2,16 +2,13 @@
 // Copyright (C) 2022-2025 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use crypto_auditing::types::{Context, ContextID, Event, EventGroup};
+use crypto_auditing::types::{ContextTracker, EventGroup};
 use futures::{Stream, stream::StreamExt, try_join};
 use inotify::{EventMask, EventStream, Inotify, WatchDescriptor, WatchMask};
 use serde_cbor::de::Deserializer;
-use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::fs;
 use std::marker;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::time::{Duration, Instant};
 use tokio::signal;
 use tokio::sync::{broadcast, mpsc};
@@ -92,23 +89,21 @@ impl Drop for Reader {
 
 #[derive(Debug)]
 struct Writer {
-    all_contexts: BTreeMap<ContextID, Rc<RefCell<Context>>>,
-    root_contexts: Vec<(Instant, Rc<RefCell<Context>>)>,
+    tracker: ContextTracker,
     event_window: Duration,
     scopes: Vec<String>,
     timeouts: JoinSet<()>,
+    last_flush: Instant,
 }
 
 impl Writer {
     fn new(event_window: Duration, scopes: &Vec<String>) -> Self {
-        let all_contexts: BTreeMap<ContextID, Rc<RefCell<Context>>> = BTreeMap::new();
-        let root_contexts = Vec::new();
         Self {
-            all_contexts,
-            root_contexts,
+            tracker: ContextTracker::new(),
             event_window,
             scopes: scopes.to_owned(),
             timeouts: JoinSet::new(),
+            last_flush: Instant::now(),
         }
     }
 
@@ -117,56 +112,9 @@ impl Writer {
         if !self.scopes.is_empty() {
             group.events_filtered(&self.scopes);
         }
-        for event in group.events() {
-            match event {
-                Event::NewContext {
-                    parent: parent_context,
-                    origin,
-                } => {
-                    let context = Rc::new(RefCell::new(Context {
-                        context: *group.context(),
-                        origin: origin.to_owned(),
-                        start: group.start(),
-                        end: group.end(),
-                        ..Default::default()
-                    }));
-                    if let Some(parent) = self.all_contexts.get(&parent_context[..]) {
-                        parent
-                            .borrow_mut()
-                            .spans
-                            .insert(*group.context(), context.clone());
-                    } else {
-                        self.root_contexts.push((Instant::now(), context.clone()));
-                        self.timeouts.spawn(sleep(self.event_window));
-                    }
-                    self.all_contexts.insert(*group.context(), context);
-                }
-                Event::Data { key, value } => {
-                    if !self.all_contexts.contains_key(group.context()) {
-                        // Either this library did not do a new_context for this context, or the
-                        // log we have is truncated at the beginning. Just assume that this context
-                        // has no parent and create a new one so we don't loose the information in
-                        // this message.
-                        let context_obj = Rc::new(RefCell::new(Context {
-                            context: *group.context(),
-                            start: group.start(),
-                            end: group.end(),
-                            ..Default::default()
-                        }));
-                        self.root_contexts
-                            .push((Instant::now(), context_obj.clone()));
-                        self.all_contexts.insert(*group.context(), context_obj);
-                    }
-                    if let Some(parent) = self.all_contexts.get(group.context()) {
-                        parent
-                            .borrow_mut()
-                            .events
-                            .insert(key.to_string(), value.clone());
-                    }
-                }
-            }
+        if self.tracker.handle_event_group(&group) > 0 {
+            self.timeouts.spawn(sleep(self.event_window));
         }
-
         Ok(())
     }
 
@@ -183,13 +131,9 @@ impl Writer {
                     ).await?
                 },
                 Some(_) = self.timeouts.join_next() => {
-                    self.root_contexts.retain(|(instant, context)| {
-                        if instant.elapsed() > self.event_window {
-                            println!("{}", serde_json::to_string_pretty(context).unwrap());
-                            return false;
-                        }
-                        true
-                    });
+                    for context in self.tracker.flush(self.last_flush.checked_add(self.event_window)) {
+                        println!("{}", serde_json::to_string_pretty(&context).unwrap());
+                    }
                 },
                 _ = shutdown_receiver.recv() => break,
             }

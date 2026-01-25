@@ -10,7 +10,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -43,6 +43,94 @@ pub struct Context {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     #[serde(serialize_with = "only_values")]
     pub spans: BTreeMap<ContextID, Rc<RefCell<Context>>>,
+}
+
+#[derive(Debug)]
+pub struct ContextTracker {
+    all_contexts: BTreeMap<ContextID, Rc<RefCell<Context>>>,
+    root_contexts: Vec<(Instant, Rc<RefCell<Context>>)>,
+}
+
+impl ContextTracker {
+    pub fn new() -> Self {
+        Self {
+            all_contexts: BTreeMap::new(),
+            root_contexts: Vec::new(),
+        }
+    }
+
+    pub fn flush(&mut self, since: Option<Instant>) -> impl IntoIterator<Item = Context> {
+        let mut removed = Vec::new();
+        self.root_contexts.retain(|(timestamp, context)| {
+            if let Some(since) = since
+                && *timestamp < since
+            {
+                true
+            } else {
+                self.all_contexts.remove(&context.borrow().context[..]);
+                removed.push(context.clone());
+                false
+            }
+        });
+        removed
+            .into_iter()
+            .map(|context| Rc::into_inner(context).unwrap().into_inner())
+    }
+
+    pub fn handle_event_group(&mut self, group: &EventGroup) -> usize {
+        let mut count = 0;
+        for event in group.events() {
+            match event {
+                Event::NewContext {
+                    parent: parent_context,
+                    origin,
+                } => {
+                    let context = Rc::new(RefCell::new(Context {
+                        context: *group.context(),
+                        origin: origin.to_owned(),
+                        start: group.start(),
+                        end: group.end(),
+                        ..Default::default()
+                    }));
+                    if let Some(parent) = self.all_contexts.get(&parent_context[..]) {
+                        parent
+                            .borrow_mut()
+                            .spans
+                            .insert(*group.context(), context.clone());
+                    } else {
+                        self.root_contexts.push((Instant::now(), context.clone()));
+                        count += 1;
+                    }
+                    self.all_contexts.insert(*group.context(), context);
+                }
+                Event::Data { key, value } => {
+                    if !self.all_contexts.contains_key(group.context()) {
+                        // Either this library did not do a new_context for this context, or the
+                        // log we have is truncated at the beginning. Just assume that this context
+                        // has no parent and create a new one so we don't loose the information in
+                        // this message.
+                        let context_obj = Rc::new(RefCell::new(Context {
+                            context: *group.context(),
+                            start: group.start(),
+                            end: group.end(),
+                            ..Default::default()
+                        }));
+                        self.root_contexts
+                            .push((Instant::now(), context_obj.clone()));
+                        self.all_contexts.insert(*group.context(), context_obj);
+                        count += 1;
+                    }
+                    if let Some(parent) = self.all_contexts.get(group.context()) {
+                        parent
+                            .borrow_mut()
+                            .events
+                            .insert(key.to_string(), value.clone());
+                    }
+                }
+            }
+        }
+        count
+    }
 }
 
 #[serde_as]
