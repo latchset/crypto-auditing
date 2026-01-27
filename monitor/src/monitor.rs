@@ -99,7 +99,7 @@ struct Writer {
 impl Writer {
     fn new(event_window: Duration, scopes: &Vec<String>) -> Self {
         Self {
-            tracker: ContextTracker::new(),
+            tracker: ContextTracker::new(None),
             event_window,
             scopes: scopes.to_owned(),
             timeouts: JoinSet::new(),
