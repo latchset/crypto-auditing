@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let log_file = std::fs::File::open(&cli.log_path)
         .with_context(|| format!("unable to read file `{}`", cli.log_path.display()))?;
-    let mut tracker = ContextTracker::new();
+    let mut tracker = ContextTracker::new(None);
     for group in Deserializer::from_reader(&log_file).into_iter::<EventGroup>() {
         tracker.handle_event_group(&group?);
     }

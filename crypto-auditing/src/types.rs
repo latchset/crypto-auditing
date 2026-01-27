@@ -10,7 +10,8 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use sysinfo::System;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -29,17 +30,17 @@ where
 }
 
 #[serde_as]
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Context {
     #[serde_as(as = "Hex")]
     #[serde(rename = "context")]
     pub id: ContextId,
     #[serde_as(as = "Hex")]
     pub origin: Vec<u8>,
-    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
-    pub start: Duration,
-    #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
-    pub end: Duration,
+    #[serde_as(as = "serde_with::TimestampSecondsWithFrac<f64>")]
+    pub start: SystemTime,
+    #[serde_as(as = "serde_with::TimestampSecondsWithFrac<f64>")]
+    pub end: SystemTime,
     pub events: BTreeMap<String, EventData>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     #[serde(serialize_with = "only_values")]
@@ -50,13 +51,19 @@ pub struct Context {
 pub struct ContextTracker {
     all_contexts: BTreeMap<ContextId, Rc<RefCell<Context>>>,
     root_contexts: Vec<(Instant, Rc<RefCell<Context>>)>,
+    boot_time: SystemTime,
 }
 
 impl ContextTracker {
-    pub fn new() -> Self {
+    pub fn new(boot_time: Option<SystemTime>) -> Self {
         Self {
             all_contexts: BTreeMap::new(),
             root_contexts: Vec::new(),
+            boot_time: boot_time.unwrap_or_else(|| {
+                UNIX_EPOCH
+                    .checked_add(Duration::from_secs(System::boot_time()))
+                    .unwrap()
+            }),
         }
     }
 
@@ -79,6 +86,14 @@ impl ContextTracker {
     }
 
     pub fn handle_event_group(&mut self, group: &EventGroup) -> usize {
+        let start = self
+            .boot_time
+            .checked_add(group.start())
+            .unwrap_or(UNIX_EPOCH);
+        let end = self
+            .boot_time
+            .checked_add(group.end())
+            .unwrap_or(UNIX_EPOCH);
         let mut count = 0;
         for event in group.events() {
             match event {
@@ -89,9 +104,10 @@ impl ContextTracker {
                     let context = Rc::new(RefCell::new(Context {
                         id: *group.context(),
                         origin: origin.to_owned(),
-                        start: group.start(),
-                        end: group.end(),
-                        ..Default::default()
+                        start,
+                        end,
+                        events: Default::default(),
+                        spans: Default::default(),
                     }));
                     if let Some(parent) = self.all_contexts.get(&parent_context[..]) {
                         parent
@@ -112,9 +128,11 @@ impl ContextTracker {
                         // this message.
                         let context_obj = Rc::new(RefCell::new(Context {
                             id: *group.context(),
-                            start: group.start(),
-                            end: group.end(),
-                            ..Default::default()
+                            origin: Default::default(),
+                            start,
+                            end,
+                            events: Default::default(),
+                            spans: Default::default(),
                         }));
                         self.root_contexts
                             .push((Instant::now(), context_obj.clone()));
