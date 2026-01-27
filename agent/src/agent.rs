@@ -3,7 +3,7 @@
 
 use anyhow::{Context as _, Result, bail};
 use core::future::Future;
-use crypto_auditing::types::{ContextID, EventGroup};
+use crypto_auditing::types::{ContextId, EventGroup};
 use libbpf_rs::{
     RingBufferBuilder,
     skel::{OpenSkel, SkelBuilder},
@@ -46,7 +46,7 @@ fn bump_memlock_rlimit() -> Result<()> {
     Ok(())
 }
 
-fn encrypt_context(key: impl AsRef<[u8]>, context: &ContextID) -> Result<ContextID> {
+fn encrypt_context(key: impl AsRef<[u8]>, context: &ContextId) -> Result<ContextId> {
     let cipher = Cipher::aes_128_ecb();
     let mut encryptor = Crypter::new(cipher, Mode::Encrypt, key.as_ref(), None).unwrap();
     encryptor.pad(false);
@@ -237,7 +237,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
 
                     // Encrypt context IDs that appear in the event read
-                    if let Err(e) = group.encrypt_context(|context: &mut ContextID| {
+                    if let Err(e) = group.encrypt_context(|context: &mut ContextId| {
                         *context = encrypt_context(&encryption_key[..], context)?;
                         Ok(())
                     }) {
@@ -303,7 +303,7 @@ mod tests {
             let mut group =
                 EventGroup::from_bytes(&buffer).expect("unable to deserialize to EventGroup");
             group
-                .encrypt_context(|context: &mut ContextID| {
+                .encrypt_context(|context: &mut ContextId| {
                     *context = encrypt_context(&encryption_key[..], context)?;
                     Ok(())
                 })

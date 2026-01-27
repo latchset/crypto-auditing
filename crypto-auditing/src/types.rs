@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-pub type ContextID = [u8; 16];
+pub type ContextId = [u8; 16];
 
 fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -32,7 +32,8 @@ where
 #[derive(Debug, Default, Serialize)]
 pub struct Context {
     #[serde_as(as = "Hex")]
-    pub context: ContextID,
+    #[serde(rename = "context")]
+    pub id: ContextId,
     #[serde_as(as = "Hex")]
     pub origin: Vec<u8>,
     #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
@@ -42,12 +43,12 @@ pub struct Context {
     pub events: BTreeMap<String, EventData>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     #[serde(serialize_with = "only_values")]
-    pub spans: BTreeMap<ContextID, Rc<RefCell<Context>>>,
+    pub spans: BTreeMap<ContextId, Rc<RefCell<Context>>>,
 }
 
 #[derive(Debug)]
 pub struct ContextTracker {
-    all_contexts: BTreeMap<ContextID, Rc<RefCell<Context>>>,
+    all_contexts: BTreeMap<ContextId, Rc<RefCell<Context>>>,
     root_contexts: Vec<(Instant, Rc<RefCell<Context>>)>,
 }
 
@@ -67,7 +68,7 @@ impl ContextTracker {
             {
                 true
             } else {
-                self.all_contexts.remove(&context.borrow().context[..]);
+                self.all_contexts.remove(&context.borrow().id[..]);
                 removed.push(context.clone());
                 false
             }
@@ -86,7 +87,7 @@ impl ContextTracker {
                     origin,
                 } => {
                     let context = Rc::new(RefCell::new(Context {
-                        context: *group.context(),
+                        id: *group.context(),
                         origin: origin.to_owned(),
                         start: group.start(),
                         end: group.end(),
@@ -110,7 +111,7 @@ impl ContextTracker {
                         // has no parent and create a new one so we don't loose the information in
                         // this message.
                         let context_obj = Rc::new(RefCell::new(Context {
-                            context: *group.context(),
+                            id: *group.context(),
                             start: group.start(),
                             end: group.end(),
                             ..Default::default()
@@ -149,7 +150,7 @@ pub enum EventData {
 pub enum Event {
     NewContext {
         #[serde_as(as = "serde_with::Bytes")]
-        parent: ContextID,
+        parent: ContextId,
         #[serde_as(as = "serde_with::Bytes")]
         origin: Vec<u8>,
     },
@@ -163,7 +164,7 @@ pub enum Event {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EventGroup {
     #[serde_as(as = "serde_with::Bytes")]
-    context: ContextID,
+    context: ContextId,
     #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
     start: Duration,
     #[serde_as(as = "serde_with::DurationNanoSeconds<u64>")]
@@ -171,8 +172,8 @@ pub struct EventGroup {
     events: Vec<Event>,
 }
 
-fn format_context_id(pid_tgid: u64, context: i64) -> ContextID {
-    let mut result: ContextID = Default::default();
+fn format_context_id(pid_tgid: u64, context: i64) -> ContextId {
+    let mut result: ContextId = Default::default();
     result[..8].copy_from_slice(&u64::to_le_bytes(pid_tgid));
     result[8..].copy_from_slice(&i64::to_le_bytes(context));
     result
@@ -180,7 +181,7 @@ fn format_context_id(pid_tgid: u64, context: i64) -> ContextID {
 
 impl EventGroup {
     /// Returns the context ID associated with the event group
-    pub fn context(&self) -> &ContextID {
+    pub fn context(&self) -> &ContextId {
         &self.context
     }
 
@@ -208,7 +209,7 @@ impl EventGroup {
     /// Returns encrypted context ID associated with the event group
     pub fn encrypt_context<F>(&mut self, f: F) -> Result<(), Box<dyn std::error::Error>>
     where
-        F: Fn(&mut ContextID) -> Result<(), Box<dyn std::error::Error>>,
+        F: Fn(&mut ContextId) -> Result<(), Box<dyn std::error::Error>>,
     {
         f(&mut self.context)?;
 

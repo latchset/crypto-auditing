@@ -334,7 +334,7 @@ is the formal definition in [CDDL] (Concise Data Definition Language):
 LogEntry = EventGroup
 
 EventGroup = {
-  context: ContextID
+  context: ContextId
   start: time
   end: time
   events: [+ Event]
@@ -342,11 +342,11 @@ EventGroup = {
 
 Event = NewContext / Data
 
-ContextID = bstr .size 16
+ContextId = bstr .size 16
 
 NewContext = {
   NewContext: {
-    parent: ContextID
+    parent: ContextId
   }
 }
 
@@ -361,7 +361,7 @@ Data = {
 The log consists of a series of `EventGroup` objects, which groups
 events in given time window from `start` to `end`.  Timestamps are
 represented as a monotonic duration from the kernel boot time.
-`ContextID` is an encrypted 16-byte context.
+`ContextId` is an encrypted 16-byte context.
 
 ### Drawbacks and alternatives
 
