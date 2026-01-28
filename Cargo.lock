@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "agenttest"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "libbpf-cargo",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "crypto-auditing"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "crypto-auditing-agent"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "agenttest",
  "anyhow",
@@ -353,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "crypto-auditing-client"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -369,7 +369,7 @@ dependencies = [
 
 [[package]]
 name = "crypto-auditing-event-broker"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -390,7 +390,7 @@ dependencies = [
 
 [[package]]
 name = "crypto-auditing-event-monitor"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -414,7 +414,7 @@ dependencies = [
 
 [[package]]
 name = "crypto-auditing-log-parser"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
