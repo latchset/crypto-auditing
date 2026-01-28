@@ -84,9 +84,9 @@ $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556 --priori
 
 In the above example, client stores logs as a sequence of
 CBOR objects, which can be parsed and printed as a tree with the
-`crau-log-parser` executable:
+`crau-query` executable:
 ```console
-$ crau-log-parser audit.cborseq
+$ crau-query --log-file audit.cborseq
 [
   {
     "context": "33acb8e6ccc65bb285bd2f84cac3bf80",
@@ -183,7 +183,7 @@ From the tree output, a flamegraph can be produced with the
 `scripts/flamegraph.py`:
 
 ```console
-$ crau-log-parser audit.cborseq | python scripts/flamegraph.py -
+$ crau-query --log-file audit.cborseq | python scripts/flamegraph.py -
 dumping data to flamegraph.html
 ```
 
