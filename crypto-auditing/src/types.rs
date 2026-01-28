@@ -10,7 +10,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::rc::Rc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::System;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -50,7 +50,7 @@ pub struct Context {
 #[derive(Debug)]
 pub struct ContextTracker {
     all_contexts: BTreeMap<ContextId, Rc<RefCell<Context>>>,
-    root_contexts: Vec<(Instant, Rc<RefCell<Context>>)>,
+    root_contexts: Vec<Rc<RefCell<Context>>>,
     boot_time: SystemTime,
 }
 
@@ -67,11 +67,11 @@ impl ContextTracker {
         }
     }
 
-    pub fn flush(&mut self, since: Option<Instant>) -> impl IntoIterator<Item = Context> {
+    pub fn flush(&mut self, before: Option<SystemTime>) -> impl IntoIterator<Item = Context> {
         let mut removed = Vec::new();
-        self.root_contexts.retain(|(timestamp, context)| {
-            if let Some(since) = since
-                && *timestamp < since
+        self.root_contexts.retain(|context| {
+            if let Some(before) = before
+                && context.borrow().start > before
             {
                 true
             } else {
@@ -115,7 +115,7 @@ impl ContextTracker {
                             .spans
                             .insert(*group.context(), context.clone());
                     } else {
-                        self.root_contexts.push((Instant::now(), context.clone()));
+                        self.root_contexts.push(context.clone());
                         count += 1;
                     }
                     self.all_contexts.insert(*group.context(), context);
@@ -134,8 +134,7 @@ impl ContextTracker {
                             events: Default::default(),
                             spans: Default::default(),
                         }));
-                        self.root_contexts
-                            .push((Instant::now(), context_obj.clone()));
+                        self.root_contexts.push(context_obj.clone());
                         self.all_contexts.insert(*group.context(), context_obj);
                         count += 1;
                     }
