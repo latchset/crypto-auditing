@@ -3,7 +3,7 @@
 #
 # Usage:
 #
-#     cargo run --bin crypto-auditing-log-parser audit.cborseq > audit.json
+#     crau-query --log-file audit.cborseq > audit.json
 #     python flamegraph.py audit.json
 #
 # Based on perf script flamegraph written by
