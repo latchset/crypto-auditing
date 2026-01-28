@@ -8,7 +8,7 @@ authors.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-clap = { workspace = true, features=["derive"] }
+clap = { workspace = true, features=["derive", "cargo"] }
 crypto-auditing.workspace = true
 hex.workspace = true
 serde.workspace = true
