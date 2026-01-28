@@ -11,7 +11,7 @@ mod config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
-    Pager::new().skip_on_notty().setup();
+    Pager::new().setup();
 
     let log_file = std::fs::File::open(&config.log_file)
         .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
