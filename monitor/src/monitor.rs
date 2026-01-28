@@ -9,7 +9,7 @@ use serde_cbor::de::Deserializer;
 use std::fs;
 use std::marker;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 use tokio::signal;
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinSet;
@@ -93,7 +93,7 @@ struct Writer {
     event_window: Duration,
     scopes: Vec<String>,
     timeouts: JoinSet<()>,
-    last_flush: Instant,
+    last_flush: SystemTime,
 }
 
 impl Writer {
@@ -103,7 +103,7 @@ impl Writer {
             event_window,
             scopes: scopes.to_owned(),
             timeouts: JoinSet::new(),
-            last_flush: Instant::now(),
+            last_flush: SystemTime::now(),
         }
     }
 
@@ -134,6 +134,7 @@ impl Writer {
                     for context in self.tracker.flush(self.last_flush.checked_add(self.event_window)) {
                         println!("{}", serde_json::to_string_pretty(&context).unwrap());
                     }
+                    self.last_flush = SystemTime::now();
                 },
                 _ = shutdown_receiver.recv() => break,
             }
