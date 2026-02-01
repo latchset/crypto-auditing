@@ -4,8 +4,8 @@
 - [Summary](#summary)
 - [Design Details](#design-details)
   - [Architecture](#architecture)
-  - [crypto-auditing agent](#crypto-auditing-agent)
-  - [crypto-auditing event broker](#crypto-auditing-event-broker)
+  - [crau-agent](#crau-agent)
+  - [Log analysis tools](#log-analysis-tools)
 <!-- /toc -->
 
 ## Summary
@@ -19,48 +19,35 @@ The following figure illustrates the proposed architecture.
 
 ![](architecture.svg)
 
-At the highest level, the architecture can be seen as a variant of
-[MQTT] (Message Queuing Telemetry Transport): the programs being
-monitored acts as a publisher, the programs consume the collected
-information act as a subscriber, and there will be intermediate
-components that coordinate the communication flow between them.
+At the highest level, the architecture consists of two parts:
+crau-agent and log analysis tools (crau-query, crau-monitor).
 
-- **crypto-auditing agent**: A program that receives events from publishers and write them onto the primary log storage
-- **crypto-auditing event broker**: A program that accesses the primary log storage and notify the subscribers
+crau-agent runs as a system service, receives cryptographic events
+from the kernel through eBPF, and writes them onto the primary log
+file.
 
-### crypto-auditing agent
+Log analysis tools provide users with access to the primary log
+storage.
 
-The responsibilities of crypto-auditing agent include:
+### crau-agent
 
-- Install BPF program to monitor USDT
-- Get notified an event when USDT is reached
-- Write events to primary log storage
+The responsibilities of crau-agent include:
 
-The agent is meant to work as fast as possible, while it shouldn't be
-resource intensive, by utilizing asynchronous I/O mechanisms for
-communicating with the publishers, through the kernel ([BPF ring
-buffer] and [io_uring]).
+- Install BPF program to monitor USDT events
+- Receive notification events on execution reaching USDT probes
+- Write received events to primary log file
 
-### crypto-auditing event broker
+The agent is meant to work as fast as possible with minimal resource
+consumption. The current implementation leverages [eBPF ring buffers]
+and [io_uring] for asynchronous I/O.
 
-The event broker is the only process which has direct access to the
-primary log storage on behalf of the subscribers.  The
-responsibilities of event broker include:
+### Log analysis tools
 
-- Subscription management
-  - Accept connections from subscribers
-  - Deliver events to subscribers
-  - For each event, ensure every subscriber receives it at most once
-- Event management
-  - Read events from primary log storage
-  - Truncate primary log storage based on policies, such as certain time has elapsed, and/or all subscribers have read (or skipped) certain range of event sequence
+The log analysis tools provides ways to access the primary log file,
+either at any later time or at real-time.
 
-The event broker caters for multiple types of subscribers: some may
-periodically (daily, for example) check the log and calculate
-statistics, and others may immediately consume events and provide
-real-time diagnostics.
+The current implementation contains crau-query for the former, and
+crau-monitor for the latter.
 
-[MQTT]: https://mqtt.org
 [BPF ring buffer]: https://www.kernel.org/doc/html/latest/bpf/ringbuf.html
 [io_uring]: https://en.wikipedia.org/wiki/Io_uring
-
