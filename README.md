@@ -103,7 +103,7 @@ $ crau-query --log-file audit.cborseq
         "start": 49431631956782,
         "end": 49431631963209,
         "events": {
-          "name": "tls::certificate_verify",
+          "name": "tls::verify",
           "tls::signature_algorithm": 2057
         }
       }
@@ -124,7 +124,7 @@ $ crau-query --log-file audit.cborseq
         "start": 49431628203429,
         "end": 49431628207396,
         "events": {
-          "name": "tls::certificate_verify",
+          "name": "tls::verify",
           "tls::signature_algorithm": 2057
         }
       }
@@ -145,7 +145,7 @@ $ crau-query --log-file audit.cborseq
         "start": 49434509684783,
         "end": 49434509694813,
         "events": {
-          "name": "tls::certificate_verify",
+          "name": "tls::verify",
           "tls::signature_algorithm": 2057
         }
       }
@@ -166,7 +166,7 @@ $ crau-query --log-file audit.cborseq
         "start": 49434503929186,
         "end": 49434503940540,
         "events": {
-          "name": "tls::certificate_verify",
+          "name": "tls::verify",
           "tls::signature_algorithm": 2057
         }
       }

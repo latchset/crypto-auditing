@@ -75,7 +75,7 @@ a more efficient (binary) format will be used in practical deployment.
     {
         "type": "string_data",
         "context": "00..02",
-        "name": "tls::certificate_verify"
+        "name": "tls::verify"
     },
     {
         "type": "word_data",
@@ -94,7 +94,7 @@ This can be conceptually represented as a tree of events:
 
 - `tls::handshake_client` (00..01)
   - `tls::protocol_version` = 0x0304
-  - `tls::certificate_verify` (00..02)
+  - `tls::verify` (00..02)
     - `tls::signature_algorithm` = 0x0804
     - `pk::bits` = 3072
 
@@ -159,7 +159,7 @@ like the following, preserving the same semantics:
             },
             {
                 "type": "string_data",
-                "name": "tls::certificate_verify"
+                "name": "tls::verify"
             },
             {
                 "type": "word_data",
@@ -210,13 +210,13 @@ and TLS probe points.
 
 ##### TLS context names
 
-| name                      | description                                                      |
-|---------------------------|------------------------------------------------------------------|
-| `tls::handshake_client`   | TLS handshake for client                                         |
-| `tls::handshake_server`   | TLS handshake for server                                         |
-| `tls::certificate_sign`   | Digital signature is created using certificate in TLS handshake  |
-| `tls::certificate_verify` | Digital signature is verified using certificate in TLS handshake |
-| `tls::key_exchange`       | Shared secret derivation in TLS handshake                        |
+| name                    | description                                                      |
+|-------------------------|------------------------------------------------------------------|
+| `tls::handshake_client` | TLS handshake for client                                         |
+| `tls::handshake_server` | TLS handshake for server                                         |
+| `tls::sign`             | Digital signature is created using certificate in TLS handshake  |
+| `tls::verify`           | Digital signature is verified using certificate in TLS handshake |
+| `tls::key_exchange`     | Shared secret derivation in TLS handshake                        |
 
 ##### TLS keys
 
@@ -286,7 +286,7 @@ These contexts are only useful when a public key operation cannot be
 determined from the outer context. If it is obvious from the outer
 context, the probe point provider may choose to not create a new
 context.  For example, when the parent context is
-`tls::certificate_verify`, there is no need to create a new context
+`tls::verify`, there is no need to create a new context
 with `pk::verify`.
 
 | name              | description                     |
