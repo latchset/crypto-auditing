@@ -153,7 +153,7 @@ async fn shutdown(
             if let Err(e) = maybe_value {
                 info!(error = %e, "error receiving ctrl-c")
             }
-            info!("shutting down event broker");
+            info!("shutting down event monitor");
             if let Err(e) = shutdown_sender.send(()) {
                 info!(error = %e, "unable to send shutdown");
             }

@@ -124,7 +124,7 @@ impl ContextTracker {
                     if !self.all_contexts.contains_key(group.context()) {
                         // Either this library did not do a new_context for this context, or the
                         // log we have is truncated at the beginning. Just assume that this context
-                        // has no parent and create a new one so we don't loose the information in
+                        // has no parent and create a new one so we don't lose the information in
                         // this message.
                         let context_obj = Rc::new(RefCell::new(Context {
                             id: *group.context(),
