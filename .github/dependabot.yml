@@ -9,8 +9,16 @@ updates:
     versioning-strategy: "lockfile-only"
     directory: "/" # Location of package manifests
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    groups:
+      everything:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/" # Location of package manifests
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    groups:
+      everything:
+        patterns:
+          - "*"
