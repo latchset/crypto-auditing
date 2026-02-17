@@ -8,6 +8,14 @@ using BPF USDT probes to intercept specific entry points in crypto libraries,
 as they are used by user space processes on the system, and collect data so that
 it can be analyzed later.
 
+The primary use-case of this project is to facilitate the migration of
+organizations to post-quantum cryptography. Since post-quantum
+algorithms are relatively new and not all applications are immediately
+compatible, mandatory switch from classical cryptography is
+impractical. To enable a smoother transition, crypto-auditing can be
+employed at run time to identify any instances where classical
+cryptography is still in use.
+
 The design documents can be found from the following links:
 
 - [Objectives and high-level design](docs/objectives.md)
