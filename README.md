@@ -27,23 +27,15 @@ The design documents can be found from the following links:
 ## Installation
 
 1. Install the latest Rust toolchain
-2. Install the instrumented crypto libraries, such as GnuTLS:
-```console
-$ git clone --depth=1 -b wip/usdt https://gitlab.com/gnutls/gnutls.git
-$ ./bootstrap
-$ ./configure --prefix=/path/to/installation --enable-crypto-auditing
-$ make -j$(nproc)
-$ sudo make install
-```
-3. Install the dependencies (note that libbpf 1.1.1 or later is required)
+2. Install the dependencies (note that libbpf 1.1.1 or later is required)
 ```console
 $ sudo dnf install bpftool make libbpf-devel llvm-devel rustfmt
 ```
-4. Build the programs with `make`
+3. Build the programs with `make`
 ```console
 $ make
 ```
-5. Install the programs with `make install`
+4. Install the programs with `make install`
 ```console
 $ sudo make install
 ```
@@ -80,7 +72,7 @@ $ sudo systemctl start crau-agent.service
 ```console
 $ crau-monitor
 ```
-7. On another terminal, run any commands using the instrumented library
+7. On another terminal, run any commands using the instrumented library, such as GnuTLS in Fedora Linux 43 or later
 ```console
 $ gnutls-serv --x509certfile=doc/credentials/x509/cert-rsa-pss.pem --x509keyfile=doc/credentials/x509/key-rsa-pss.pem &
 $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556
