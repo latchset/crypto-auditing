@@ -77,11 +77,10 @@ $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556 --priori
 
 ## Inspecting logs
 
-In the above example, client stores logs as a sequence of
-CBOR objects, which can be parsed and printed as a tree with the
-`crau-query` executable:
+In the above example, client stores events in a log file on the system, which can be parsed and printed with the `crau-query` executable:
+
 ```console
-$ crau-query --log-file audit.cborseq
+$ crau-query
 [
   {
     "context": "33acb8e6ccc65bb285bd2f84cac3bf80",
@@ -170,15 +169,11 @@ $ crau-query --log-file audit.cborseq
 ]
 ```
 
-To simply deserialize it, you can use the `cborseq2json.rb` script
-from [cbor-diag](https://github.com/cabo/cbor-diag) package, which can
-be installed with `gem install --user cbor-diag`.
-
-From the tree output, a flamegraph can be produced with the
+From this output, a flamegraph can be produced with the
 `scripts/flamegraph.py`:
 
 ```console
-$ crau-query --log-file audit.cborseq | python scripts/flamegraph.py -
+$ crau-query | python scripts/flamegraph.py -
 dumping data to flamegraph.html
 ```
 
