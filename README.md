@@ -53,27 +53,21 @@ $ sudo useradd -g crypto-auditing
 User=crypto-auditing
 Group=crypto-auditing
 ```
-3. Modify systemd configuration for event-broker in `/lib/systemd/system/crau-event-broker.socket`:
-```ini
-SocketUser=crypto-auditing
-SocketGroup=crypto-auditing
-SocketMode=0660
-```
-4. Modify agent configuration in `/etc/crypto-auditing/agent.conf`:
+3. Modify agent configuration in `/etc/crypto-auditing/agent.conf`:
 ```toml
 library = ["/path/to/installation/lib64/libgnutls.so.30"]
 user = "crypto-auditing:crypto-auditing"
 ```
-5. Enable agent
+4. Enable agent
 ```console
 $ sudo systemctl daemon-reload
 $ sudo systemctl start crau-agent.service
 ```
-6. Run monitor
+5. Run monitor
 ```console
 $ crau-monitor
 ```
-7. On another terminal, run any commands using the instrumented library, such as GnuTLS in Fedora Linux 43 or later
+6. On another terminal, run any commands using the instrumented library, such as GnuTLS in Fedora Linux 43 or later
 ```console
 $ gnutls-serv --x509certfile=doc/credentials/x509/cert-rsa-pss.pem --x509keyfile=doc/credentials/x509/key-rsa-pss.pem &
 $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556
