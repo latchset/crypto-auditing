@@ -2,16 +2,17 @@
 
 ## Introduction
 
-This project aims to create the infrastructure needed to audit crypto
-operations performed by crypto libraries on a system. This is accomplished by
-using BPF USDT probes to intercept specific entry points in crypto libraries,
-as they are used by user space processes on the system, and collect data so that
-it can be analyzed later.
+This project establishes the necessary infrastructure for auditing
+cryptographic operations executed by system crypto libraries. This is
+achieved by deploying BPF USDT probes. These probes intercept specific
+entry points within the crypto libraries, capturing data as they are
+utilized by user-space processes across the system, thereby enabling
+subsequent analysis.
 
 The primary use-case of this project is to facilitate the migration of
 organizations to post-quantum cryptography. Since post-quantum
 algorithms are relatively new and not all applications are immediately
-compatible, mandatory switch from classical cryptography is
+compatible, a mandatory switch from classical cryptography is
 impractical. To enable a smoother transition, crypto-auditing can be
 employed at run time to identify any instances where classical
 cryptography is still in use.
@@ -52,27 +53,21 @@ $ sudo useradd -g crypto-auditing
 User=crypto-auditing
 Group=crypto-auditing
 ```
-3. Modify systemd configuration for event-broker in `/lib/systemd/system/crau-event-broker.socket`:
-```ini
-SocketUser=crypto-auditing
-SocketGroup=crypto-auditing
-SocketMode=0660
-```
-4. Modify agent configuration in `/etc/crypto-auditing/agent.conf`:
+3. Modify agent configuration in `/etc/crypto-auditing/agent.conf`:
 ```toml
 library = ["/path/to/installation/lib64/libgnutls.so.30"]
 user = "crypto-auditing:crypto-auditing"
 ```
-5. Enable agent
+4. Enable agent
 ```console
 $ sudo systemctl daemon-reload
 $ sudo systemctl start crau-agent.service
 ```
-6. Run monitor
+5. Run monitor
 ```console
 $ crau-monitor
 ```
-7. On another terminal, run any commands using the instrumented library, such as GnuTLS in Fedora Linux 43 or later
+6. On another terminal, run any commands using the instrumented library, such as GnuTLS in Fedora Linux 43 or later
 ```console
 $ gnutls-serv --x509certfile=doc/credentials/x509/cert-rsa-pss.pem --x509keyfile=doc/credentials/x509/key-rsa-pss.pem &
 $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556
@@ -82,11 +77,10 @@ $ gnutls-cli --x509cafile=doc/credentials/x509/ca.pem localhost -p 5556 --priori
 
 ## Inspecting logs
 
-In the above example, client stores logs as a sequence of
-CBOR objects, which can be parsed and printed as a tree with the
-`crau-query` executable:
+In the above example, client stores events in a log file on the system, which can be parsed and printed with the `crau-query` executable:
+
 ```console
-$ crau-query --log-file audit.cborseq
+$ crau-query
 [
   {
     "context": "33acb8e6ccc65bb285bd2f84cac3bf80",
@@ -175,15 +169,11 @@ $ crau-query --log-file audit.cborseq
 ]
 ```
 
-To simply deserialize it, you can use the `cborseq2json.rb` script
-from [cbor-diag](https://github.com/cabo/cbor-diag) package, which can
-be installed with `gem install --user cbor-diag`.
-
-From the tree output, a flamegraph can be produced with the
+From this output, a flamegraph can be produced with the
 `scripts/flamegraph.py`:
 
 ```console
-$ crau-query --log-file audit.cborseq | python scripts/flamegraph.py -
+$ crau-query | python scripts/flamegraph.py -
 dumping data to flamegraph.html
 ```
 
