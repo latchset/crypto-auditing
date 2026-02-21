@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 
+[badges]
+maintenance = { status = "deprecated" }
+
 [dependencies]
 anyhow.workspace = true
 clap = { workspace = true, features = ["cargo", "derive"] }
