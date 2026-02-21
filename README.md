@@ -2,16 +2,17 @@
 
 ## Introduction
 
-This project aims to create the infrastructure needed to audit crypto
-operations performed by crypto libraries on a system. This is accomplished by
-using BPF USDT probes to intercept specific entry points in crypto libraries,
-as they are used by user space processes on the system, and collect data so that
-it can be analyzed later.
+This project establishes the necessary infrastructure for auditing
+cryptographic operations executed by system crypto libraries. This is
+achieved by deploying BPF USDT probes. These probes intercept specific
+entry points within the crypto libraries, capturing data as they are
+utilized by user-space processes across the system, thereby enabling
+subsequent analysis.
 
 The primary use-case of this project is to facilitate the migration of
 organizations to post-quantum cryptography. Since post-quantum
 algorithms are relatively new and not all applications are immediately
-compatible, mandatory switch from classical cryptography is
+compatible, a mandatory switch from classical cryptography is
 impractical. To enable a smoother transition, crypto-auditing can be
 employed at run time to identify any instances where classical
 cryptography is still in use.
