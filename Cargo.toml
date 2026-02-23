@@ -20,6 +20,7 @@ authors = ["The crypto-auditing developers"]
 anyhow = "1.0"
 bindgen = "0.72"
 bytes = "1.2"
+caps = "0.5"
 clap = "4"
 crypto-auditing = { version = "=0.3.0", path = "crypto-auditing" }
 futures = "0.3"

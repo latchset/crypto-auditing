@@ -12,6 +12,7 @@ default = ["tokio-uring"]
 [dependencies]
 anyhow.workspace = true
 bytes.workspace = true
+caps.workspace = true
 clap = { workspace = true, features = ["cargo", "derive"] }
 crypto-auditing.workspace = true
 futures.workspace = true

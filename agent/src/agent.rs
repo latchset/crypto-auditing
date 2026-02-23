@@ -2,6 +2,7 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result, bail};
+use caps::{CapSet, Capability, CapsHashSet};
 use core::future::Future;
 use crypto_auditing::types::{ContextId, EventGroup};
 use libbpf_rs::{
@@ -120,6 +121,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     bump_memlock_rlimit()?;
 
+    // Check if we can read a capability set
+    caps::read(None, CapSet::Effective)?;
+
+    // First, prepare the capabilities we want to end up with
+    let capset = CapsHashSet::from([
+        Capability::CAP_BPF,
+        Capability::CAP_PERFMON,
+        Capability::CAP_SETGID,
+        Capability::CAP_SETUID,
+    ]);
+    // Set only necessary capabilities in effective and permitted sets
+    caps::set(None, CapSet::Effective, &capset)?;
+    caps::set(None, CapSet::Permitted, &capset)?;
+
     let skel_builder = AuditSkelBuilder::default();
     let mut storage = MaybeUninit::uninit();
     let open_skel = skel_builder.open(&mut storage)?;
@@ -207,6 +222,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some((ref user, ref group)) = config.user {
             permissions::run_as(user, group)?;
         }
+
+        // Drop capabilities no longer needed
+        caps::drop(None, CapSet::Effective, Capability::CAP_SETGID)?;
+        caps::drop(None, CapSet::Effective, Capability::CAP_SETUID)?;
+        caps::drop(None, CapSet::Permitted, Capability::CAP_SETGID)?;
+        caps::drop(None, CapSet::Permitted, Capability::CAP_SETUID)?;
 
         let fd = AsyncFd::with_interest(rb.epoll_fd(), Interest::READABLE)?;
         let mut writer = log_writer::LogWriter::from_config(&config).await?;
