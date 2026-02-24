@@ -1,5 +1,7 @@
 # crypto-auditing
 
+[![Rust](https://github.com/latchset/crypto-auditing/actions/workflows/rust.yml/badge.svg)](https://github.com/latchset/crypto-auditing/actions/workflows/rust.yml)
+
 ## Introduction
 
 This project establishes the necessary infrastructure for auditing
