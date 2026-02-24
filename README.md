@@ -17,7 +17,12 @@ impractical. To enable a smoother transition, crypto-auditing can be
 employed at run time to identify any instances where classical
 cryptography is still in use.
 
-The design documents can be found from the following links:
+The crypto-auditing design prioritizes privacy, system efficiency, and
+ease of maintainability, ensuring that user activity remains
+confidential, performance is minimally impacted, and collection rules
+are easily managed.
+
+More detailed design documents are available from the following links:
 
 - [Objectives and high-level design](docs/objectives.md)
 - [Architecture](docs/architecture.md)
