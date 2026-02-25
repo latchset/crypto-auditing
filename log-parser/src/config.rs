@@ -15,12 +15,15 @@ const LOG: &str = "/var/log/crypto-auditing/audit.cborseq";
 pub struct Config {
     /// Path to output log file
     pub log_file: PathBuf,
+    /// System boot time as seconds from Unix epoch
+    pub boot_time: Option<u64>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             log_file: PathBuf::from(LOG),
+            boot_time: None,
         }
     }
 }
@@ -44,6 +47,13 @@ impl Config {
                 .required(false)
                 .value_parser(value_parser!(PathBuf))
                 .default_value("audit.cborseq"),
+            )
+            .arg(
+                arg!(
+                    --"boot-time" <SECONDS> "System boot time as seconds from Unix epoch"
+                )
+                .required(false)
+                .value_parser(value_parser!(u64)),
             )
             .get_matches();
 
@@ -75,6 +85,10 @@ impl Config {
     fn merge_arg_matches(&mut self, matches: &ArgMatches) -> Result<()> {
         if let Some(ValueSource::CommandLine) = matches.value_source("log-file") {
             self.log_file = matches.try_get_one::<PathBuf>("log-file")?.unwrap().clone();
+        }
+
+        if let Some(ValueSource::CommandLine) = matches.value_source("boot-time") {
+            self.boot_time = Some(matches.try_get_one::<u64>("boot-time")?.unwrap().clone());
         }
 
         Ok(())
