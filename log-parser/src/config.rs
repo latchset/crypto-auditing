@@ -3,6 +3,8 @@
 
 use anyhow::{Context as _, Result, anyhow};
 use clap::{ArgMatches, arg, command, parser::ValueSource, value_parser};
+use jiff::Zoned;
+use parse_datetime::parse_datetime;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -17,6 +19,10 @@ pub struct Config {
     pub log_file: PathBuf,
     /// System boot time as seconds from Unix epoch
     pub boot_time: Option<u64>,
+    /// The earliest timestamp to match events
+    pub since: Option<Zoned>,
+    /// The latest timestamp to match events
+    pub until: Option<Zoned>,
 }
 
 impl Default for Config {
@@ -24,6 +30,8 @@ impl Default for Config {
         Self {
             log_file: PathBuf::from(LOG),
             boot_time: None,
+            since: None,
+            until: None,
         }
     }
 }
@@ -55,6 +63,20 @@ impl Config {
                 .required(false)
                 .value_parser(value_parser!(u64)),
             )
+            .arg(
+                arg!(
+                    --since <TIME> "The earliest timestamp to match events"
+                )
+                .required(false)
+                .value_parser(parse_zoned),
+            )
+            .arg(
+                arg!(
+                    --until <TIME> "The latest timestamp to match events"
+                )
+                .required(false)
+                .value_parser(parse_zoned),
+            )
             .get_matches();
 
         if let Some(config_file) = matches.get_one::<PathBuf>("config") {
@@ -79,6 +101,14 @@ impl Config {
             self.log_file = pathbuf_from_value(value)?;
         }
 
+        if let Some(value) = config.get("since") {
+            self.since = Some(zoned_from_value(value)?);
+        }
+
+        if let Some(value) = config.get("until") {
+            self.until = Some(zoned_from_value(value)?);
+        }
+
         Ok(())
     }
 
@@ -91,6 +121,14 @@ impl Config {
             self.boot_time = Some(matches.try_get_one::<u64>("boot-time")?.unwrap().clone());
         }
 
+        if let Some(ValueSource::CommandLine) = matches.value_source("since") {
+            self.since = Some(matches.try_get_one::<Zoned>("since")?.unwrap().clone());
+        }
+
+        if let Some(ValueSource::CommandLine) = matches.value_source("until") {
+            self.until = Some(matches.try_get_one::<Zoned>("until")?.unwrap().clone());
+        }
+
         Ok(())
     }
 }
@@ -100,4 +138,15 @@ fn pathbuf_from_value(value: &Value) -> Result<PathBuf> {
         .as_str()
         .ok_or_else(|| anyhow!("value must be string"))
         .map(PathBuf::from)
+}
+
+fn parse_zoned(arg: &str) -> Result<Zoned> {
+    Ok(parse_datetime(arg)?)
+}
+
+fn zoned_from_value(value: &Value) -> Result<Zoned> {
+    value
+        .as_str()
+        .ok_or_else(|| anyhow!("value must be string"))
+        .map(parse_zoned)?
 }

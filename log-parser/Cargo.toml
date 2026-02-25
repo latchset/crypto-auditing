@@ -14,12 +14,14 @@ anyhow.workspace = true
 clap = { workspace = true, features=["derive", "cargo"] }
 crypto-auditing.workspace = true
 hex.workspace = true
+jiff.workspace = true
 serde.workspace = true
 serde_cbor.workspace = true
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
 toml.workspace = true
-pager = "0.16"
+pager.workspace = true
+parse_datetime.workspace = true
 
 [[bin]]
 name = "crau-query"
