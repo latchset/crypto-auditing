@@ -26,12 +26,15 @@ crypto-auditing = { version = "=0.3.0", path = "crypto-auditing" }
 futures = "0.3"
 hex = "0.4"
 inotify = "0.11.0"
+jiff = "0.2"
 libbpf-rs = { version = "0.24.4", default-features = false }
 libbpf-cargo = { version = "0.24.4", default-features = false }
 libc = "0.2"
 nix = "0.26"
 openssl = "0.10"
 page_size = "0.6"
+pager = "0.16"
+parse_datetime = "0.14"
 probe = "0.5"
 plain = "0.2"
 serde = { version = "1.0", features = ["derive", "rc"] }

@@ -25,7 +25,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for group in Deserializer::from_reader(&log_file).into_iter::<EventGroup>() {
         tracker.handle_event_group(&group?);
     }
-    let root_contexts: Vec<_> = tracker.flush(None).into_iter().collect();
+    let root_contexts: Vec<_> = tracker
+        .flush(None)
+        .into_iter()
+        .filter(|c| match (&config.since, &config.until) {
+            (Some(since), Some(until)) => c.start >= since.into() && c.end <= until.into(),
+            (Some(since), None) => c.start >= since.into(),
+            (None, Some(until)) => c.end <= until.into(),
+            (None, None) => true,
+        })
+        .collect();
     let content = serde_json::to_string_pretty(&root_contexts)?;
     if let Err(e) = io::stdout().write_all(content.as_bytes()) {
         if e.kind() != io::ErrorKind::BrokenPipe {
