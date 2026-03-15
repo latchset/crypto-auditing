@@ -30,7 +30,6 @@ jiff = "0.2"
 libbpf-rs = { version = "0.24.4", default-features = false }
 libbpf-cargo = { version = "0.24.4", default-features = false }
 libc = "0.2"
-nix = "0.26"
 openssl = "0.10"
 page_size = "0.6"
 pager = "0.16"
