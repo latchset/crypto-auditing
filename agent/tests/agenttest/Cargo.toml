@@ -10,7 +10,6 @@ authors.workspace = true
 anyhow.workspace = true
 libbpf-rs.workspace = true
 libc.workspace = true
-nix.workspace = true
 tempfile.workspace = true
 plain.workspace = true
 
