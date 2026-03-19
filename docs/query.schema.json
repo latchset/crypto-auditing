@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/latchset/crypto-auditing/docs/query.schema.json",
+  "title": "crypto-auditing query output format",
+  "description": "Output format of crau-query command",
+  "$defs": {
+    "Span": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "context": { "type": "string" },
+          "origin": { "type": "string" },
+          "start": { "type": "number" },
+          "end": { "type": "number" },
+          "events": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" }
+            },
+            "patternProperties": {
+              "^[^:]+::.+$": {
+                "type": ["string", "number"]
+              }
+            },
+            "additionalProperties": true,
+            "requires": ["name"]
+          },
+          "spans": { "$ref": "#/$defs/Span" }
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/Span"
+}
