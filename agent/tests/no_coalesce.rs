@@ -142,10 +142,11 @@ fn test_probe_no_coalesce() {
         .into_iter::<EventGroup>()
         .collect();
     let groups = groups.expect("error deserializing");
-    assert_eq!(groups.len(), 5);
-    assert_eq!(groups[0].events().len(), 1);
+    assert_eq!(groups.len(), 6);
+    assert!(groups[0].is_metadata());
     assert_eq!(groups[1].events().len(), 1);
     assert_eq!(groups[2].events().len(), 1);
     assert_eq!(groups[3].events().len(), 1);
     assert_eq!(groups[4].events().len(), 1);
+    assert_eq!(groups[5].events().len(), 1);
 }

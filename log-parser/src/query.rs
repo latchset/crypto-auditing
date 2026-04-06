@@ -2,13 +2,27 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use crypto_auditing::types::{ContextTracker, EventGroup};
+use crypto_auditing::types::{ContextTracker, EventData, EventGroup};
 use pager::Pager;
 use serde_cbor::de::Deserializer;
 use std::io::{self, Write};
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 mod config;
+
+fn get_boot_time_from_metadata(group: &EventGroup) -> Option<SystemTime> {
+    for event in group.events() {
+        if let Some(data) = event.data("boot_time") {
+            match data {
+                EventData::Word(secs) => {
+                    return Some(UNIX_EPOCH + Duration::from_secs(*secs as u64));
+                }
+                _ => (),
+            }
+        }
+    }
+    None
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
@@ -17,12 +31,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log_file = std::fs::File::open(&config.log_file)
         .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
 
-    let mut tracker = ContextTracker::new(
-        config
-            .boot_time
-            .map(|secs| UNIX_EPOCH + Duration::from_secs(secs)),
-    );
-    for group in Deserializer::from_reader(&log_file).into_iter::<EventGroup>() {
+    let mut groups = Deserializer::from_reader(&log_file)
+        .into_iter::<EventGroup>()
+        .peekable();
+
+    // Figure out the system boot time, first from the config, and
+    // then from the metadata group in the log
+    let boot_time = if let Some(secs) = config.boot_time {
+        Some(UNIX_EPOCH + Duration::from_secs(secs))
+    } else if let Some(Ok(group)) = groups.peek()
+        && group.is_metadata()
+    {
+        let boot_time = get_boot_time_from_metadata(&group);
+        // Skip the metadata group
+        groups.next();
+        boot_time
+    } else {
+        None
+    };
+
+    let mut tracker = ContextTracker::new(boot_time);
+    for group in groups {
         tracker.handle_event_group(&group?);
     }
     let root_contexts: Vec<_> = tracker

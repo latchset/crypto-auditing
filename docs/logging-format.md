@@ -363,6 +363,16 @@ events in given time window from `start` to `end`.  Timestamps are
 represented as a monotonic duration from the kernel boot time.
 `ContextId` is an encrypted 16-byte context.
 
+The first `EventGroup` may be a virtual metadata group, whose
+`ContextId` is all-zero. This is used for including environmental
+information as event entries. The following events are currently
+defined:
+
+| key         | value type | description                                 |
+|-------------|------------|---------------------------------------------|
+| `version`   | word       | the file format version (should be 1)       |
+| `boot_time` | word       | kernel boot time in seconds from Unix epoch |
+
 ### Drawbacks and alternatives
 
 ### Questions

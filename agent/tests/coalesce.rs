@@ -120,7 +120,8 @@ fn test_probe_coalesce() {
         .into_iter::<EventGroup>()
         .collect();
     let groups = groups.expect("error deserializing");
-    assert_eq!(groups.len(), 2);
-    assert_eq!(groups[0].events().len(), 4);
-    assert_eq!(groups[1].events().len(), 1);
+    assert_eq!(groups.len(), 3);
+    assert!(groups[0].is_metadata());
+    assert_eq!(groups[1].events().len(), 4);
+    assert_eq!(groups[2].events().len(), 1);
 }

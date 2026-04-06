@@ -32,7 +32,8 @@ impl LogWriter {
         let file = File::create(&config.log_file)
             .await
             .with_context(|| format!("unable to create file `{}`", config.log_file.display()))?;
-        Ok(Self {
+
+        let mut log_writer = Self {
             config: config.clone(),
             file: Some(file),
             offset: 0u64,
@@ -40,7 +41,12 @@ impl LogWriter {
             groups: Vec::default(),
             written_events: 0usize,
             pending_events: 0usize,
-        })
+        };
+
+        let metadata = EventGroup::metadata();
+        log_writer.write_event_group(&metadata).await?;
+
+        Ok(log_writer)
     }
 
     pub fn timeout(&self) -> Duration {
@@ -164,18 +170,22 @@ impl LogWriter {
         Ok(())
     }
 
+    async fn write_event_group(&mut self, group: &EventGroup) -> Result<()> {
+        let v = match self.config.format {
+            config::Format::Normal => serde_cbor::ser::to_vec(group)?,
+            config::Format::Packed => serde_cbor::ser::to_vec_packed(group)?,
+            config::Format::Minimal => to_vec_minimal(group)?,
+        };
+        self.write_all(v).await
+    }
+
     pub async fn flush(&mut self) -> Result<()> {
         self.pending_events = 0;
         for group in self.groups.clone() {
             if self.should_rotate_after(self.written_events) {
                 self.rotate().await?;
             }
-            let v = match self.config.format {
-                config::Format::Normal => serde_cbor::ser::to_vec(&group)?,
-                config::Format::Packed => serde_cbor::ser::to_vec_packed(&group)?,
-                config::Format::Minimal => to_vec_minimal(&group)?,
-            };
-            self.write_all(v).await?;
+            self.write_event_group(&group).await?;
             probe!(
                 crypto_auditing_internal_agent,
                 event_group,
