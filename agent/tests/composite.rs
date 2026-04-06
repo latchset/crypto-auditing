@@ -144,27 +144,28 @@ fn test_probe_composite() {
         .into_iter::<EventGroup>()
         .collect();
     let groups = groups.expect("error deserializing");
-    assert_eq!(groups.len(), 5);
-    assert_eq!(groups[0].events().len(), 1);
-    assert!(matches!(groups[0].events()[0], Event::NewContext { .. }));
+    assert_eq!(groups.len(), 6);
+    assert!(groups[0].is_metadata());
     assert_eq!(groups[1].events().len(), 1);
-    if let Event::Data { key, .. } = &groups[1].events()[0] {
-        assert_eq!(key, "foo");
-    } else {
-        unreachable!();
-    }
+    assert!(matches!(groups[1].events()[0], Event::NewContext { .. }));
     assert_eq!(groups[2].events().len(), 1);
     if let Event::Data { key, .. } = &groups[2].events()[0] {
-        assert_eq!(key, "bar");
+        assert_eq!(key, "foo");
     } else {
         unreachable!();
     }
     assert_eq!(groups[3].events().len(), 1);
     if let Event::Data { key, .. } = &groups[3].events()[0] {
-        assert_eq!(key, "baz");
+        assert_eq!(key, "bar");
     } else {
         unreachable!();
     }
     assert_eq!(groups[4].events().len(), 1);
-    assert!(matches!(groups[4].events()[0], Event::NewContext { .. }));
+    if let Event::Data { key, .. } = &groups[4].events()[0] {
+        assert_eq!(key, "baz");
+    } else {
+        unreachable!();
+    }
+    assert_eq!(groups[5].events().len(), 1);
+    assert!(matches!(groups[5].events()[0], Event::NewContext { .. }));
 }

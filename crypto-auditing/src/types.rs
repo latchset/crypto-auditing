@@ -17,6 +17,9 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 pub type ContextId = [u8; 16];
 
+/// Context ID associated with `EventGroup` representing metadata
+pub const METADATA_CONTEXT_ID: ContextId = [0; 16];
+
 fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -177,6 +180,15 @@ pub enum Event {
     },
 }
 
+impl Event {
+    pub fn data(&self, needle: &str) -> Option<&EventData> {
+        match self {
+            Self::Data { key, value } if key == needle => Some(value),
+            _ => None,
+        }
+    }
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EventGroup {
@@ -197,6 +209,32 @@ fn format_context_id(pid_tgid: u64, context: i64) -> ContextId {
 }
 
 impl EventGroup {
+    /// Returns a new `EventGroup` with metadata events
+    pub fn metadata() -> Self {
+        let events = vec![
+            Event::Data {
+                key: "version".to_string(),
+                value: EventData::Word(1),
+            },
+            Event::Data {
+                key: "boot_time".to_string(),
+                value: EventData::Word(System::boot_time() as i64),
+            },
+        ];
+
+        Self {
+            context: METADATA_CONTEXT_ID,
+            start: Default::default(),
+            end: Default::default(),
+            events,
+        }
+    }
+
+    /// Returns true if this is a metadata group
+    pub fn is_metadata(&self) -> bool {
+        self.context == METADATA_CONTEXT_ID
+    }
+
     /// Returns the context ID associated with the event group
     pub fn context(&self) -> &ContextId {
         &self.context
