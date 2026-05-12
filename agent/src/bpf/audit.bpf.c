@@ -71,6 +71,10 @@ record_new_context (struct pt_regs *ctx, long context, long parent)
 			 context);
   event->parent = parent;
 
+  err = bpf_get_current_comm (event->command, sizeof(event->command));
+  if (err < 0)
+    DEBUG ("unable to get current command: %ld\n", err);
+
   if (BPF_CORE_READ_BITFIELD(build_id, status) & BPF_STACK_BUILD_ID_VALID)
     {
       event->origin_size = bpf_core_field_size (build_id->build_id);

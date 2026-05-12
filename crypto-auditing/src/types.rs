@@ -8,7 +8,7 @@ use serde::{
 use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::rc::Rc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::System;
@@ -32,6 +32,13 @@ where
     seq.end()
 }
 
+fn to_string_lossy<S>(source: &CString, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&source.to_string_lossy())
+}
+
 #[serde_as]
 #[derive(Debug, Serialize)]
 pub struct Context {
@@ -40,6 +47,8 @@ pub struct Context {
     pub id: ContextId,
     #[serde_as(as = "Hex")]
     pub origin: Vec<u8>,
+    #[serde(serialize_with = "to_string_lossy")]
+    pub command: CString,
     #[serde_as(as = "serde_with::TimestampSecondsWithFrac<f64>")]
     pub start: SystemTime,
     #[serde_as(as = "serde_with::TimestampSecondsWithFrac<f64>")]
@@ -103,10 +112,12 @@ impl ContextTracker {
                 Event::NewContext {
                     parent: parent_context,
                     origin,
+                    command,
                 } => {
                     let context = Rc::new(RefCell::new(Context {
                         id: *group.context(),
                         origin: origin.to_owned(),
+                        command: command.to_owned(),
                         start,
                         end,
                         events: Default::default(),
@@ -132,6 +143,7 @@ impl ContextTracker {
                         let context_obj = Rc::new(RefCell::new(Context {
                             id: *group.context(),
                             origin: Default::default(),
+                            command: Default::default(),
                             start,
                             end,
                             events: Default::default(),
@@ -173,6 +185,8 @@ pub enum Event {
         parent: ContextId,
         #[serde_as(as = "serde_with::Bytes")]
         origin: Vec<u8>,
+        #[serde(default)]
+        command: CString,
     },
     Data {
         key: String,
@@ -305,11 +319,17 @@ impl EventGroup {
                 let origin = unsafe {
                     (&(*raw_new_context).origin)[..(*raw_new_context).origin_size as usize].to_vec()
                 };
+                let command =
+                    unsafe { CStr::from_ptr((&(*raw_new_context).command).as_ptr()).to_owned() };
                 EventGroup {
                     context,
                     start: ktime,
                     end: ktime,
-                    events: vec![Event::NewContext { parent, origin }],
+                    events: vec![Event::NewContext {
+                        parent,
+                        origin,
+                        command,
+                    }],
                 }
             }
             audit_event_type_t::AUDIT_EVENT_DATA => unsafe {

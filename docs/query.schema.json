@@ -11,6 +11,7 @@
         "properties": {
           "context": { "type": "string" },
           "origin": { "type": "string" },
+          "command": { "type": "string" },
           "start": { "type": "number" },
           "end": { "type": "number" },
           "events": {
