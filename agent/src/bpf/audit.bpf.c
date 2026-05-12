@@ -48,6 +48,21 @@ populate_event_header (struct audit_event_header_st *header,
   header->ktime = bpf_ktime_get_boot_ns ();
 }
 
+static __always_inline long
+get_current_executable (char *buf, size_t size_of_buf)
+{
+  struct task_struct *task = (struct task_struct *)bpf_get_current_task ();
+  struct file *file = BPF_CORE_READ(task, mm, exe_file);
+  struct path *path = __builtin_preserve_access_index (&file->f_path);
+  struct dentry *dentry = BPF_CORE_READ(path, dentry);
+  unsigned char *name = BPF_CORE_READ(dentry, d_name.name);
+  u32 len = BPF_CORE_READ(dentry, d_name.len);
+  len += 1; /* for the terminating NUL byte */
+  if (len > MAX_EXECUTABLE_SIZE)
+    len = MAX_EXECUTABLE_SIZE;
+  return bpf_probe_read_kernel_str (buf, len, name);
+}
+
 static __always_inline int
 record_new_context (struct pt_regs *ctx, long context, long parent)
 {
@@ -80,6 +95,10 @@ record_new_context (struct pt_regs *ctx, long context, long parent)
 			 sizeof(*event),
 			 context);
   event->parent = parent;
+
+  err = get_current_executable (event->executable, sizeof(event->executable));
+  if (err < 0)
+    DEBUG ("unable to get current executable: %ld\n", err);
 
   if (BPF_CORE_READ_BITFIELD(build_id, status) & BPF_STACK_BUILD_ID_VALID)
     {
