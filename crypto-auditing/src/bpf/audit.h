@@ -32,6 +32,7 @@ struct audit_event_header_st
 };
 
 #define MAX_BUILD_ID_SIZE 64
+#define MAX_EXECUTABLE_SIZE 256
 
 struct audit_new_context_event_st
 {
@@ -39,6 +40,7 @@ struct audit_new_context_event_st
   long parent;
   unsigned char origin[MAX_BUILD_ID_SIZE];
   unsigned long int origin_size;
+  char executable[MAX_EXECUTABLE_SIZE];
 };
 
 struct audit_data_event_st

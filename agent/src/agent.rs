@@ -317,7 +317,15 @@ mod tests {
         let input_file_path = fixtures_path.join("input.cborseq");
         let input_file = std::fs::File::open(&input_file_path).expect("unable to open input file");
 
+        // Copy metadata from the fixture and prepend it to the output
+        let output_file_path = fixtures_path.join("output.cborseq");
+        let expected = std::fs::read(&output_file_path).expect("unable to read output file");
+        let mut iter = Deserializer::from_reader(expected.as_slice()).into_iter::<EventGroup>();
+        let metadata: EventGroup = iter.next().unwrap().expect("unable to read metadata");
         let mut output = Vec::new();
+        let mut v = serde_cbor::ser::to_vec(&metadata).expect("unable to serialize to CBOR");
+        output.append(&mut v);
+
         for res in
             Deserializer::from_reader(&input_file).into_iter::<(Duration, Vec<u8>, Vec<u8>)>()
         {
@@ -334,8 +342,6 @@ mod tests {
             output.append(&mut v);
         }
 
-        let output_file_path = fixtures_path.join("output.cborseq");
-        let expected = std::fs::read(&output_file_path).expect("unable to read output file");
         assert_eq!(expected, output);
     }
 }
