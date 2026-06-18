@@ -2,6 +2,16 @@
 /* Copyright (C) 2022-2023 The crypto-auditing developers. */
 
 #include "vmlinux.h"
+
+/* bpf_helpers.h from libbpf 1.6 had a conflicting declaration of
+ * bpf_stream_vprintk.
+ */
+#include <bpf/libbpf_version.h>
+#if defined(LIBBPF_MAJOR_VERSION) && defined(LIBBPF_MINOR_VERSION) && \
+  LIBBPF_MAJOR_VERSION == 1 && LIBBPF_MINOR_VERSION == 6
+# define bpf_stream_vprintk bpf_stream_vprintk_UNUSED
+#endif
+
 #include <bpf/bpf_core_read.h>
 #include <bpf/usdt.bpf.h>
 #include "audit.h"
