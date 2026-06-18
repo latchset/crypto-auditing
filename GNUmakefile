@@ -58,6 +58,35 @@ install: install-programs
 check: all
 	cargo test --target-dir="${TARGETDIR}"
 
+.PHONY: update-fixtures
+update-fixtures: all
+	@echo "Updating fixtures/logs/since-until/*.json from audit.cborseq..."
+	${TARGETDIR}/${PROFILE}/crau-query \
+		-c fixtures/conf/query.conf \
+		--log-file fixtures/logs/since-until/audit.cborseq \
+		--boot-time 1771970837 \
+		> fixtures/logs/since-until/none.json
+	${TARGETDIR}/${PROFILE}/crau-query \
+		-c fixtures/conf/query.conf \
+		--log-file fixtures/logs/since-until/audit.cborseq \
+		--boot-time 1771970837 \
+		--since "2026-02-25 08:13:23JST + 1 mins" \
+		> fixtures/logs/since-until/since.json
+	${TARGETDIR}/${PROFILE}/crau-query \
+		-c fixtures/conf/query.conf \
+		--log-file fixtures/logs/since-until/audit.cborseq \
+		--boot-time 1771970837 \
+		--since "2026-02-25 08:13:23JST + 1 mins" \
+		--until "2026-02-25 08:13:23JST + 2 mins" \
+		> fixtures/logs/since-until/since-until.json
+	${TARGETDIR}/${PROFILE}/crau-query \
+		-c fixtures/conf/query.conf \
+		--log-file fixtures/logs/since-until/audit.cborseq \
+		--boot-time 1771970837 \
+		--until "2026-02-25 08:13:23JST + 2 mins" \
+		> fixtures/logs/since-until/until.json
+	@echo "Fixture JSON files updated successfully!"
+
 .PHONY: clean
 clean:
 	cargo clean
