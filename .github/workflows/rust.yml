@@ -14,14 +14,14 @@ jobs:
     name: Static code checks
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Check formatting
       run: cargo fmt --all -- --check
 
   cargo-deny:
       runs-on: ubuntu-latest
       steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@v7
         - uses: EmbarkStudios/cargo-deny-action@v2
 
   build:
@@ -31,7 +31,7 @@ jobs:
       image: registry.fedoraproject.org/fedora:42
       options: --privileged
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install dependencies
       run: dnf install -y cargo clang clippy kernel-devel libbpf-devel llvm-devel rustfmt
     - name: Copy vmlinux.h
