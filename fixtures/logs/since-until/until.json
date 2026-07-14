@@ -14,6 +14,41 @@
         "context": "3cb4522554c9b0dc609cb15a60e8066d",
         "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
         "executable": "",
+        "start": 1771974803.010911,
+        "end": 1771974803.010911,
+        "events": {
+          "name": "tls::key_exchange",
+          "tls::group": 4588
+        },
+        "spans": [
+          {
+            "context": "f34bb5200436326560d85aa040c2edc4",
+            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+            "executable": "",
+            "start": 1771974803.010913,
+            "end": 1771974803.010913,
+            "events": {
+              "name": "pk::generate",
+              "pk::algorithm": "ML-KEM-768"
+            }
+          },
+          {
+            "context": "4886da6e495c21dd4269881115794cc2",
+            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+            "executable": "",
+            "start": 1771974803.0110207,
+            "end": 1771974803.0110207,
+            "events": {
+              "name": "pk::generate",
+              "pk::algorithm": "ECDH (X25519)"
+            }
+          }
+        ]
+      },
+      {
+        "context": "3cb4522554c9b0dc609cb15a60e8066d",
+        "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+        "executable": "",
         "start": 1771974803.0110753,
         "end": 1771974803.0110753,
         "events": {
@@ -71,18 +106,6 @@
         ]
       },
       {
-        "context": "ba2f7865e4de038b3da670176ac134aa",
-        "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
-        "executable": "",
-        "start": 1771974803.0425448,
-        "end": 1771974803.0425448,
-        "events": {
-          "name": "pk::verify",
-          "pk::algorithm": "RSA",
-          "pk::bits": 2048
-        }
-      },
-      {
         "context": "dcb5668c7981c908da00c4f485aa28fe",
         "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
         "executable": "",
@@ -107,6 +130,30 @@
             }
           }
         ]
+      },
+      {
+        "context": "ba2f7865e4de038b3da670176ac134aa",
+        "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+        "executable": "",
+        "start": 1771974803.0423572,
+        "end": 1771974803.0423572,
+        "events": {
+          "name": "pk::verify",
+          "pk::algorithm": "RSA",
+          "pk::bits": 4096
+        }
+      },
+      {
+        "context": "ba2f7865e4de038b3da670176ac134aa",
+        "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+        "executable": "",
+        "start": 1771974803.0425448,
+        "end": 1771974803.0425448,
+        "events": {
+          "name": "pk::verify",
+          "pk::algorithm": "RSA",
+          "pk::bits": 2048
+        }
       }
     ]
   },
@@ -121,6 +168,41 @@
       "tls::protocol_version": 772
     },
     "spans": [
+      {
+        "context": "4496299804038c7e426b63ba21e82767",
+        "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+        "executable": "",
+        "start": 1771974863.2147295,
+        "end": 1771974863.2147295,
+        "events": {
+          "name": "tls::key_exchange",
+          "tls::group": 4588
+        },
+        "spans": [
+          {
+            "context": "1f7c9636c1a8b39cc33164443e937a9a",
+            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+            "executable": "",
+            "start": 1771974863.2147315,
+            "end": 1771974863.2147315,
+            "events": {
+              "name": "pk::generate",
+              "pk::algorithm": "ML-KEM-768"
+            }
+          },
+          {
+            "context": "ba9a72d4606fc745e6a46281e9e0d88c",
+            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+            "executable": "",
+            "start": 1771974863.2148237,
+            "end": 1771974863.2148237,
+            "events": {
+              "name": "pk::generate",
+              "pk::algorithm": "ECDH (X25519)"
+            }
+          }
+        ]
+      },
       {
         "context": "4496299804038c7e426b63ba21e82767",
         "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
@@ -142,6 +224,41 @@
               "name": "pk::generate",
               "pk::algorithm": "EC/ECDSA",
               "pk::curve": "SECP256R1"
+            }
+          }
+        ]
+      },
+      {
+        "context": "9c3eb879769d1ca094404184669f6d60",
+        "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+        "executable": "",
+        "start": 1771974863.2288046,
+        "end": 1771974863.2288046,
+        "events": {
+          "name": "tls::key_exchange",
+          "tls::group": 4588
+        },
+        "spans": [
+          {
+            "context": "6b12b88a73508c86569afb171fc86fa2",
+            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+            "executable": "",
+            "start": 1771974863.2288072,
+            "end": 1771974863.2288072,
+            "events": {
+              "name": "pk::decapsulate",
+              "pk::algorithm": "ML-KEM-768"
+            }
+          },
+          {
+            "context": "464cbb78dccd784c9b70a5592a97c067",
+            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
+            "executable": "",
+            "start": 1771974863.229047,
+            "end": 1771974863.229047,
+            "events": {
+              "name": "pk::derive",
+              "pk::algorithm": "ECDH (X25519)"
             }
           }
         ]
@@ -173,39 +290,16 @@
         ]
       },
       {
-        "context": "9c3eb879769d1ca094404184669f6d60",
+        "context": "f574d1bf35c80d999cd45243992cbcf3",
         "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
         "executable": "",
-        "start": 1771974863.2288046,
-        "end": 1771974863.2288046,
+        "start": 1771974863.2471,
+        "end": 1771974863.2471,
         "events": {
-          "name": "tls::key_exchange",
-          "tls::group": 4588
-        },
-        "spans": [
-          {
-            "context": "464cbb78dccd784c9b70a5592a97c067",
-            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
-            "executable": "",
-            "start": 1771974863.229047,
-            "end": 1771974863.229047,
-            "events": {
-              "name": "pk::derive",
-              "pk::algorithm": "ECDH (X25519)"
-            }
-          },
-          {
-            "context": "6b12b88a73508c86569afb171fc86fa2",
-            "origin": "25afdfb85a5c7626b28a77ac4dce92637f7c842a",
-            "executable": "",
-            "start": 1771974863.2288072,
-            "end": 1771974863.2288072,
-            "events": {
-              "name": "pk::decapsulate",
-              "pk::algorithm": "ML-KEM-768"
-            }
-          }
-        ]
+          "name": "pk::verify",
+          "pk::algorithm": "RSA",
+          "pk::bits": 4096
+        }
       },
       {
         "context": "f574d1bf35c80d999cd45243992cbcf3",
