@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use serde::{
-    Deserialize, Serialize,
-    ser::{SerializeSeq, Serializer},
-};
+use serde::{Deserialize, Serialize, ser::Serializer};
 use serde_with::{hex::Hex, serde_as};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -19,18 +16,6 @@ pub type ContextId = [u8; 16];
 
 /// Context ID associated with `EventGroup` representing metadata
 pub const METADATA_CONTEXT_ID: ContextId = [0; 16];
-
-fn only_values<K, V, S>(source: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    V: Serialize,
-{
-    let mut seq = serializer.serialize_seq(Some(source.len()))?;
-    for value in source.values() {
-        seq.serialize_element(value)?;
-    }
-    seq.end()
-}
 
 fn to_string_lossy<S>(source: &CString, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -54,14 +39,13 @@ pub struct Context {
     #[serde_as(as = "serde_with::TimestampSecondsWithFrac<f64>")]
     pub end: SystemTime,
     pub events: BTreeMap<String, EventData>,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    #[serde(serialize_with = "only_values")]
-    pub spans: BTreeMap<ContextId, Rc<RefCell<Context>>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub spans: Vec<Rc<RefCell<Context>>>,
 }
 
 #[derive(Debug)]
 pub struct ContextTracker {
-    all_contexts: BTreeMap<ContextId, Rc<RefCell<Context>>>,
+    all_contexts: Vec<Rc<RefCell<Context>>>,
     root_contexts: Vec<Rc<RefCell<Context>>>,
     boot_time: SystemTime,
 }
@@ -69,7 +53,7 @@ pub struct ContextTracker {
 impl ContextTracker {
     pub fn new(boot_time: Option<SystemTime>) -> Self {
         Self {
-            all_contexts: BTreeMap::new(),
+            all_contexts: Vec::new(),
             root_contexts: Vec::new(),
             boot_time: boot_time.unwrap_or_else(|| {
                 UNIX_EPOCH
@@ -81,17 +65,16 @@ impl ContextTracker {
 
     pub fn flush(&mut self, before: Option<SystemTime>) -> impl IntoIterator<Item = Context> {
         let mut removed = Vec::new();
+        let expired = |context: &Rc<RefCell<Context>>| matches!(before, Some(before) if context.borrow().start > before);
         self.root_contexts.retain(|context| {
-            if let Some(before) = before
-                && context.borrow().start > before
-            {
+            if expired(context) {
                 true
             } else {
-                self.all_contexts.remove(&context.borrow().id[..]);
                 removed.push(context.clone());
                 false
             }
         });
+        self.all_contexts.retain(|context| expired(context));
         removed
             .into_iter()
             .map(|context| Rc::into_inner(context).unwrap().into_inner())
@@ -123,19 +106,31 @@ impl ContextTracker {
                         events: Default::default(),
                         spans: Default::default(),
                     }));
-                    if let Some(parent) = self.all_contexts.get(&parent_context[..]) {
-                        parent
-                            .borrow_mut()
-                            .spans
-                            .insert(*group.context(), context.clone());
+                    if let Some(parent) = self
+                        .all_contexts
+                        .iter()
+                        .rev()
+                        .find(|x| x.borrow().id == parent_context[..])
+                    {
+                        parent.borrow_mut().spans.push(context.clone());
                     } else {
                         self.root_contexts.push(context.clone());
                         count += 1;
                     }
-                    self.all_contexts.insert(*group.context(), context);
+                    self.all_contexts.push(context);
                 }
                 Event::Data { key, value } => {
-                    if !self.all_contexts.contains_key(group.context()) {
+                    if let Some(parent) = self
+                        .all_contexts
+                        .iter()
+                        .rev()
+                        .find(|x| x.borrow().id == *group.context())
+                    {
+                        parent
+                            .borrow_mut()
+                            .events
+                            .insert(key.to_string(), value.clone());
+                    } else {
                         // Either this library did not do a new_context for this context, or the
                         // log we have is truncated at the beginning. Just assume that this context
                         // has no parent and create a new one so we don't lose the information in
@@ -150,14 +145,8 @@ impl ContextTracker {
                             spans: Default::default(),
                         }));
                         self.root_contexts.push(context_obj.clone());
-                        self.all_contexts.insert(*group.context(), context_obj);
+                        self.all_contexts.push(context_obj);
                         count += 1;
-                    }
-                    if let Some(parent) = self.all_contexts.get(group.context()) {
-                        parent
-                            .borrow_mut()
-                            .events
-                            .insert(key.to_string(), value.clone());
                     }
                 }
             }
