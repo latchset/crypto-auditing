@@ -65,16 +65,16 @@ impl ContextTracker {
 
     pub fn flush(&mut self, before: Option<SystemTime>) -> impl IntoIterator<Item = Context> {
         let mut removed = Vec::new();
-        let expired = |context: &Rc<RefCell<Context>>| matches!(before, Some(before) if context.borrow().start > before);
+        let not_expired = |context: &Rc<RefCell<Context>>| matches!(before, Some(before) if context.borrow().start > before);
         self.root_contexts.retain(|context| {
-            if expired(context) {
+            if not_expired(context) {
                 true
             } else {
                 removed.push(context.clone());
                 false
             }
         });
-        self.all_contexts.retain(|context| expired(context));
+        self.all_contexts.retain(|context| not_expired(context));
         removed
             .into_iter()
             .map(|context| Rc::into_inner(context).unwrap().into_inner())
