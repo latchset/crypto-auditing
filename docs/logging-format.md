@@ -113,11 +113,14 @@ format is used in practice.
 This section provides some guidance on designing and organizing the
 events for a new protocol.
 
-#### Naming of event keys
+#### Event keys
 
-Event keys are named with alphanumeric characters and underscores,
-with an optional scope prefix delimited by "::". More formally, they
-are written in ABNF as follows:
+Within a given context, event keys are unique and consist of
+alphanumeric characters and underscores. They may optionally be
+prefixed with a scope delimited by "::", which represents a protocol
+namespace such as TLS.
+
+Formally, they are written in ABNF as follows:
 
 ```text
 nchars = ALPHA *(ALPHA / DIGIT / "_")
@@ -125,9 +128,7 @@ nchars = ALPHA *(ALPHA / DIGIT / "_")
 key = [nchars "::"] nchars
 ```
 
-Scopes are used to denote a protocol namespace, such as TLS.
-
-#### Types of event values
+#### Event values
 
 A data event conveys a data item that is either a NUL-terminated string,
 an integer that fits in a machine word, or an arbitrary blob with a
