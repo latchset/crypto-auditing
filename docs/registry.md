@@ -103,6 +103,7 @@ scope pk {
 	curve: string;
 	bits: uint16;
 	hash: string;
+	rsa_padding: string;
   }
 
   context verify {
@@ -110,18 +111,21 @@ scope pk {
 	curve: string;
 	bits: uint16;
 	hash: string;
+	rsa_padding: string;
   }
 
   context encrypt {
     algorithm: string;
 	bits: uint16;
 	hash: string;
+	rsa_padding: string;
   }
 
   context decrypt {
     algorithm: string;
 	bits: uint16;
 	hash: string;
+	rsa_padding: string;
   }
 
   context encapsulate {
@@ -161,14 +165,15 @@ scope pk {
 
 ### Public key cryptography data events
 
-| key             | value type | description                                                                                                                |
-|-----------------|------------|----------------------------------------------------------------------------------------------------------------------------|
-| `pk::algorithm` | string     | Used algorithm name                                                                                                        |
-| `pk::curve`     | string     | Elliptic curve name                                                                                                        |
-| `pk::group`     | string     | FFDH group name                                                                                                            |
-| `pk::bits`      | uint16     | Key strength in bits                                                                                                       |
-| `pk::hash`      | string     | Hash algorithm used for signing or encryption (for prehashed or parametrized schemes such as ECDSA, RSA-PSS, and RSA-OAEP) |
-| `pk::static`    | bool       | Whether `pk::derive` takes place with reused keys                                                                          |
+| key               | value type | description                                                                                                                |
+|-------------------|------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pk::algorithm`   | string     | Used algorithm name                                                                                                        |
+| `pk::curve`       | string     | Elliptic curve name                                                                                                        |
+| `pk::group`       | string     | FFDH group name                                                                                                            |
+| `pk::bits`        | uint16     | Key strength in bits                                                                                                       |
+| `pk::hash`        | string     | Hash algorithm used for signing or encryption (for prehashed or parametrized schemes such as ECDSA, RSA-PSS, and RSA-OAEP) |
+| `pk::rsa_padding` | string     | Padding mode used for signing or encryption in RSA. While this can be an arbitrary string, the following values are pre-defined: "pss" for RSA-PSS, "oaep" for RSA-OAEP, and "pkcs1-v1.5" for PKCS#1 v1.5 |
+| `pk::static`      | bool       | Whether `pk::derive` takes place with reused keys                                                                          |
 
 ## TLS
 
