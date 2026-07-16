@@ -187,6 +187,10 @@ scope tls {
 	protocol_version: uint16;
 	ciphersuite: uint16;
 
+	context key_exchange {
+	  group: uint16;
+	}
+
 	context sign {
 	  signature_algorithm: uint16;
 	}
@@ -195,9 +199,7 @@ scope tls {
 	  signature_algorithm: uint16;
 	}
 
-	context key_exchange {
-	  group: uint16;
-	}
+	context verify_cert_chain {}
 
 	extended_master_secret: bool;
   }
@@ -206,12 +208,13 @@ scope tls {
 
 ### TLS context events
 
-| name                | description                                                      |
-|---------------------|------------------------------------------------------------------|
-| `tls::handshake`    | TLS handshake                                                    |
-| `tls::sign`         | Digital signature is created using certificate in TLS handshake  |
-| `tls::verify`       | Digital signature is verified using certificate in TLS handshake |
-| `tls::key_exchange` | Shared secret derivation in TLS handshake                        |
+| name                     | description                                                                             |
+|--------------------------|-----------------------------------------------------------------------------------------|
+| `tls::handshake`         | A TLS handshake is in progress                                                          |
+| `tls::key_exchange`      | A shared secret is derived in TLS handshake                                             |
+| `tls::sign`              | A TLS handshake message (e.g., CertificateVerify in TLS 1.3) is digitally signed        |
+| `tls::verify`            | A signature on a TLS handshake message (e.g., CertificateVerify in TLS 1.3) is verified |
+| `tls::verify_cert_chain` | A certificate chain presented during a TLS handshake is verified                        |
 
 ### TLS data events
 
