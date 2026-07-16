@@ -6,8 +6,9 @@ points as well as protocol-specific probe points for TLS and SSH.
 
 ## Presentation language
 
-A protocol is typically defined with a context hierarchy, which can be
-defined using the following presentation syntax.
+Tracing information for most protocols can be represented in a
+hierarchical structure of contexts and events. This document
+defines the presentation syntax for this tree.
 
 ### Miscellaneous
 
@@ -19,7 +20,12 @@ A scope groups multiple related events within a namespace. It is
 defined using `scope <name> { ... }`, where `<name>` is the scope name.
 The body of this block may contain context events or data events.
 
-### Data events
+### Events
+
+There are two kinds of events: data events and context events. All
+events defined in this document are optional.
+
+#### Data events
 
 A data event is defined using `<name>: <type>;`, where `<name>` is the
 name of the data event and `<type>` is its data type. For example:
@@ -44,7 +50,9 @@ Available types are defined as follows:
 | int32  | word           | 32-bit signed integer             |
 | int64  | word           | 64-bit signed integer             |
 
-### Context events
+All data events defined in this document are optional.
+
+#### Context events
 
 A context event is defined using a `context <name> { ... }` block,
 where `<name>` is the name of the context event. The body of this block
@@ -68,9 +76,11 @@ The hierarchy of context events must be preserved within the same scope.
 In the example above, `c2` cannot appear at the top level, and `c3`
 cannot be placed directly under `c1`.
 
-However, context events from different scopes can be nested together.
-For example, `pk::derive` (defined below) may appear within
-`tls::key_exchange`.
+However, context events defined at top-level can be nested.  For
+example, `pk::derive` may appear within `tls::key_exchange`, as well
+as `pk::decapsulate` may be placed under another `pk::decapsulate` if
+the algorithm is defined using a hybrid construction, such as
+X25519MLKEM768.
 
 ## Generic data events
 
