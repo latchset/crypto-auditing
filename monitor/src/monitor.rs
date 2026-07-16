@@ -2,7 +2,7 @@
 // Copyright (C) 2022-2025 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use crypto_auditing::types::{ContextTracker, EventGroup};
+use crypto_auditing::{ContextTracker, types::EventGroup};
 use futures::{Stream, stream::StreamExt, try_join};
 use inotify::{EventMask, EventStream, Inotify, WatchDescriptor, WatchMask};
 use serde_cbor::de::Deserializer;
