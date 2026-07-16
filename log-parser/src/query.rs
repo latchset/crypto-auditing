@@ -2,7 +2,10 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result};
-use crypto_auditing::types::{ContextTracker, EventData, EventGroup};
+use crypto_auditing::{
+    ContextTracker,
+    types::{EventData, EventGroup},
+};
 use pager::Pager;
 use serde_cbor::de::Deserializer;
 use std::io::{self, Write};
