@@ -138,12 +138,15 @@ scope pk {
 
   context generate {
     algorithm: string;
+	curve: string;
+	group: string;
 	bits: uint16;
   }
 
   context derive {
     algorithm: string;
 	curve: string;
+	group: string;
 	bits: uint16;
 	static: bool;
   }
