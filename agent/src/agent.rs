@@ -309,8 +309,6 @@ mod tests {
     #[test]
     fn test_normal() {
         let fixtures_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
             .join("fixtures")
             .join("normal");
 

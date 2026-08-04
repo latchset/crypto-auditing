@@ -11,10 +11,7 @@ const START_TIME: &str = "2026-02-25 08:13:23JST";
 const BOOT_TIME: u64 = 1771970837;
 
 fn fixture_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .join("fixtures")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
 fn target_dir() -> PathBuf {
