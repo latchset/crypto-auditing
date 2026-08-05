@@ -11,7 +11,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 license = "GPL-3.0-or-later"
 authors = ["The crypto-auditing developers"]
@@ -24,7 +24,7 @@ bindgen = "0.72"
 bytes = "1.2"
 caps = "0.5"
 clap = "4"
-crypto-auditing = { version = "=0.3.1", path = "crypto-auditing" }
+crypto-auditing = { version = "=0.3.2", path = "crypto-auditing" }
 futures = "0.3"
 hex = "0.4"
 inotify = "0.11.0"
