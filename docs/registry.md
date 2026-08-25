@@ -65,9 +65,9 @@ context c1 {
   s1: string;
   context c2 {
     u1: uint16;
-	context c3 {
-	  i1: int16;
-	}
+    context c3 {
+      i1: int16;
+    }
   }
 }
 ```
@@ -100,32 +100,32 @@ defined as follows:
 scope pk {
   context sign {
     algorithm: string;
-	curve: string;
-	bits: uint16;
-	hash: string;
-	rsa_padding: string;
+    curve: string;
+    bits: uint16;
+    hash: string;
+    rsa_padding: string;
   }
 
   context verify {
     algorithm: string;
-	curve: string;
-	bits: uint16;
-	hash: string;
-	rsa_padding: string;
+    curve: string;
+    bits: uint16;
+    hash: string;
+    rsa_padding: string;
   }
 
   context encrypt {
     algorithm: string;
-	bits: uint16;
-	hash: string;
-	rsa_padding: string;
+    bits: uint16;
+    hash: string;
+    rsa_padding: string;
   }
 
   context decrypt {
     algorithm: string;
-	bits: uint16;
-	hash: string;
-	rsa_padding: string;
+    bits: uint16;
+    hash: string;
+    rsa_padding: string;
   }
 
   context encapsulate {
@@ -138,17 +138,17 @@ scope pk {
 
   context generate {
     algorithm: string;
-	curve: string;
-	group: string;
-	bits: uint16;
+    curve: string;
+    group: string;
+    bits: uint16;
   }
 
   context derive {
     algorithm: string;
-	curve: string;
-	group: string;
-	bits: uint16;
-	static: bool;
+    curve: string;
+    group: string;
+    bits: uint16;
+    static: bool;
   }
 }
 ```
@@ -187,24 +187,24 @@ defined as follows:
 scope tls {
   context handshake {
     role: string;
-	protocol_version: uint16;
-	ciphersuite: uint16;
+    protocol_version: uint16;
+    ciphersuite: uint16;
 
-	context key_exchange {
-	  group: uint16;
-	}
+    context key_exchange {
+      group: uint16;
+    }
 
-	context sign {
-	  signature_algorithm: uint16;
-	}
+    context sign {
+      signature_algorithm: uint16;
+    }
 
-	context verify {
-	  signature_algorithm: uint16;
-	}
+    context verify {
+      signature_algorithm: uint16;
+    }
 
-	context verify_cert_chain {}
+    context verify_cert_chain {}
 
-	extended_master_secret: bool;
+    extended_master_secret: bool;
   }
 }
 ```
@@ -239,31 +239,31 @@ follows:
 scope ssh {
   context handshake {
     role: string;
-	ident_string: string;
-	peer_ident_string: string;
-	context key_exchange {
-	  kex_algorithm: string;
-	  kex_group: string;
-	  key_algorithm: string;
-	  c2s_cipher: string;
-	  s2c_cipher: string;
-	  c2s_mac: string;
-	  s2c_mac: string;
-	  c2s_compression: string;
-	  s2c_compression: string;
-	}
+    ident_string: string;
+    peer_ident_string: string;
+    context key_exchange {
+      kex_algorithm: string;
+      kex_group: string;
+      key_algorithm: string;
+      c2s_cipher: string;
+      s2c_cipher: string;
+      c2s_mac: string;
+      s2c_mac: string;
+      c2s_compression: string;
+      s2c_compression: string;
+    }
 
-	context client_key {
-	  key_algorithm: string;
-	  cert_signature_algorithm: string;
-	  rsa_bits: uint16;
-	}
+    context client_key {
+      key_algorithm: string;
+      cert_signature_algorithm: string;
+      rsa_bits: uint16;
+    }
 
-	context server_key {
-	  key_algorithm: string;
-	  cert_signature_algorithm: string;
-	  rsa_bits: uint16;
-	}
+    context server_key {
+      key_algorithm: string;
+      cert_signature_algorithm: string;
+      rsa_bits: uint16;
+    }
   }
 }
 ```
