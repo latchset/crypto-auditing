@@ -81,11 +81,28 @@ The hierarchy of context events must be preserved within the same scope.
 In the example above, `c2` cannot appear at the top level, and `c3`
 cannot be placed directly under `c1`.
 
-However, context events defined at top-level can be nested.  For
-example, `pk::derive` may appear within `tls::key_exchange`, as well
-as `pk::decapsulate` may be placed under another `pk::decapsulate` if
-the algorithm is defined using a hybrid construction, such as
-X25519MLKEM768.
+##### Referencing context events
+
+The `ref <pattern>[, <pattern>]` directive can be used to reference
+context events by a glob pattern given by `<pattern>`. Multiple
+patterns can be specified at once, delimited by a `,`.
+
+For example,
+
+```
+scope this {
+  context c1 {
+    s1: string;
+    context c2 {
+      u1: uint16;
+      ref other::*;
+    }
+  }
+}
+```
+
+This means that any context events defined in the `other` scope may
+appear under `this::c2` context.
 
 ## Generic data events
 
@@ -118,8 +135,14 @@ scope pk {
     rsa_padding: string;
   }
 
-  context encapsulate, decapsulate {
+  context encapsulate {
     algorithm: string;
+    ref pk::derive, pk::encapsulate; /* for hybrids */
+  }
+
+  context decapsulate {
+    algorithm: string;
+    ref pk::derive, pk::decapsulate; /* for hybrids */
   }
 
   context generate {
@@ -178,13 +201,17 @@ scope tls {
 
     context key_exchange {
       group: uint16;
+      ref pk::generate, pk::derive, pk::encapsulate, pk::decapsulate;
     }
 
     context sign, verify {
       signature_algorithm: uint16;
+      ref pk::sign, pk::verify;
     }
 
-    context verify_cert_chain {}
+    context verify_cert_chain {
+      ref pk::verify;
+    }
 
     extended_master_secret: bool;
   }
