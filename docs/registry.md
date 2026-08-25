@@ -232,6 +232,8 @@ scope tls {
 
 ## SSH
 
+Note: This section is not finalized yet.
+
 Events for SSH (Secure SHell) are scoped with `ssh` and defined as
 follows:
 
