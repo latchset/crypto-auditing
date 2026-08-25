@@ -54,11 +54,16 @@ All data events defined in this document are optional.
 
 #### Context events
 
-A context event is defined using a `context <name> { ... }` block,
-where `<name>` is the name of the context event. The body of this block
-may contain data events or other context events.
+A context event is defined with a `context <name>[, <name>...] { ... }`
+directive.
 
-For example, 
+`<name>` is the name of the context event. Multiple context events can
+be defined at once, whose names are separated by `,`.
+
+The body of this block may contain data events or other context
+events.
+
+For example,
 
 ```
 context c1 {
@@ -98,7 +103,7 @@ defined as follows:
 
 ```
 scope pk {
-  context sign {
+  context sign, verify {
     algorithm: string;
     curve: string;
     bits: uint16;
@@ -106,33 +111,14 @@ scope pk {
     rsa_padding: string;
   }
 
-  context verify {
-    algorithm: string;
-    curve: string;
-    bits: uint16;
-    hash: string;
-    rsa_padding: string;
-  }
-
-  context encrypt {
+  context encrypt, decrypt {
     algorithm: string;
     bits: uint16;
     hash: string;
     rsa_padding: string;
   }
 
-  context decrypt {
-    algorithm: string;
-    bits: uint16;
-    hash: string;
-    rsa_padding: string;
-  }
-
-  context encapsulate {
-    algorithm: string;
-  }
-
-  context decapsulate {
+  context encapsulate, decapsulate {
     algorithm: string;
   }
 
@@ -194,11 +180,7 @@ scope tls {
       group: uint16;
     }
 
-    context sign {
-      signature_algorithm: uint16;
-    }
-
-    context verify {
+    context sign, verify {
       signature_algorithm: uint16;
     }
 
