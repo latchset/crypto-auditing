@@ -6,35 +6,53 @@ points as well as protocol-specific probe points for TLS and SSH.
 
 ## Presentation language
 
-Tracing information for most protocols can be represented in a
-hierarchical structure of contexts and events. This document
-defines the presentation syntax for this tree.
+Tracing metadata across supported protocols follows a hierarchical
+model consisting of contexts and leaf data events. This section
+defines the formal syntax used to describe this structured hierarchy.
 
 ### Miscellaneous
 
-Comments begin with `"/*"` and end with `"*/"`.
+Comments follow C-style block syntax. They begin with `/*` and
+terminate with `*/`. Comments do not nest and carry no semantic value.
 
 ### Scope
 
-A scope groups multiple related events within a namespace. It is
-defined using `scope <name> { ... }`, where `<name>` is the scope name.
-The body of this block may contain context events or data events.
+A scope establishes an explicit namespace to logically group related
+protocol events.
 
-### Events
+*Syntax:*
 
-There are two kinds of events: data events and context events. All
-events defined in this document are optional.
+```
+scope <name> {
+  /* scope declarations */
+}
+```
+
+where `<name>` is an identifier representing the namespace, and the
+enclosed block accepts one or more event declarations.
+
+### Event categories
+
+The schema distinguishes between two event types: Data Events and
+Context Events.
+
+Implementation Note: All defined events are optional within emitted
+traces. Consuming applications must handle omitted fields gracefully
+and not assume event presence.
 
 #### Data events
 
-A data event is defined using `<name>: <type>;`, where `<name>` is the
-name of the data event and `<type>` is its data type. For example:
+Data events represent leaf key-value pairs assigned to a context.
+
+*Syntax:*
 
 ```
-s1: string;
+<name>: <type>;
 ```
 
-Available types are defined as follows:
+where `<name>` is the identifier of the data event and `<type>` is the data type of the value.
+
+##### Supported data types
 
 | type   | representation | description                       |
 |--------|----------------|-----------------------------------|
@@ -50,44 +68,66 @@ Available types are defined as follows:
 | int32  | word           | 32-bit signed integer             |
 | int64  | word           | 64-bit signed integer             |
 
-All data events defined in this document are optional.
-
 #### Context events
 
-A context event is defined with a `context <name>[, <name>...] { ... }`
-directive.
+Context events establish structural nodes within the event tree using
+the `context` keyword.
 
-`<name>` is the name of the context event. Multiple context events can
-be defined at once, whose names are separated by `,`.
+*Syntax:*
 
-The body of this block may contain data events or other context
-events.
+```
+context <name1>[, <name2>...] {
+  /* child data, context events, or allowed_children rules */
+}
+```
 
-For example,
+A context declaration accepts either a single name or a
+comma-separated list of names that share identical block contents. The
+enclosed block may contain data events or child context events,
+allowing arbitrary nesting.
+
+##### Nesting rules
+
+The context hierarchy defined in the schema is invariant within a
+given scope. A child context cannot be moved to the root level or
+attached to an undeclared parent context.
+
+*Example:*
 
 ```
 context c1 {
   s1: string;
   context c2 {
     u1: uint16;
-    context c3 {
+    context c3, c4 {
       i1: int16;
     }
   }
 }
 ```
 
-The hierarchy of context events must be preserved within the same scope.
-In the example above, `c2` cannot appear at the top level, and `c3`
-cannot be placed directly under `c1`.
+In this structure, the outermost context `c1` contains scalar `s1` and
+nested context `c2`. Context `c2` contains scalar `u1` alongside
+context events `c3` and `c4`, both of which enclose data event
+`i1`. Runtime events must preserve this precise hierarchy; `c2` cannot
+appear at the top level, nor can `c3` be placed directly beneath `c1`.
 
-##### Referencing context events
+##### The `allowed_children` directive
 
-The `ref <pattern>[, <pattern>]` directive can be used to reference
-context events by a glob pattern given by `<pattern>`. Multiple
-patterns can be specified at once, delimited by a `,`.
+By default, only explicitly declared inline child contexts may appear
+under a parent context. To allow external top-level context events as
+valid runtime children, a context must declare an `allowed_children`
+directive.
 
-For example,
+This directive takes a comma-separated list of pattern declarations
+using the syntax `allowed_children <pattern1>[, <pattern2>, ...];`. A
+pattern can specify an explicit context name in the current scope
+(`<context_name>`), an explicit context in an external scope
+(`<scope_name>::<context_name>`), or a wildcard matching all top-level
+contexts in a given scope (`<scope_name>::*`). If the scope prefix is
+omitted, the current scope is assumed.
+
+For example:
 
 ```
 scope this {
@@ -95,14 +135,15 @@ scope this {
     s1: string;
     context c2 {
       u1: uint16;
-      ref other::*;
+      allowed_children c1, other::*;
     }
   }
 }
 ```
 
-This means that any context events defined in the `other` scope may
-appear under `this::c2` context.
+Here, context `c2` explicitly permits either `this::c1` or any
+top-level context defined within the other scope to appear as valid
+runtime children.
 
 ## Generic data events
 
@@ -137,12 +178,12 @@ scope pk {
 
   context encapsulate {
     algorithm: string;
-    ref pk::derive, pk::encapsulate; /* for hybrids */
+    allowed_children derive, encapsulate; /* for hybrid construction */
   }
 
   context decapsulate {
     algorithm: string;
-    ref pk::derive, pk::decapsulate; /* for hybrids */
+    allowed_children derive, decapsulate; /* for hybrid construction */
   }
 
   context generate {
@@ -201,16 +242,16 @@ scope tls {
 
     context key_exchange {
       group: uint16;
-      ref pk::generate, pk::derive, pk::encapsulate, pk::decapsulate;
+      allowed_children pk::generate, pk::derive, pk::encapsulate, pk::decapsulate;
     }
 
     context sign, verify {
       signature_algorithm: uint16;
-      ref pk::sign, pk::verify;
+      allowed_children pk::sign, pk::verify;
     }
 
     context verify_cert_chain {
-      ref pk::verify;
+      allowed_children pk::verify;
     }
 
     extended_master_secret: bool;
