@@ -25,7 +25,6 @@ futures.workspace = true
 libbpf-rs.workspace = true
 libbpf-sys.workspace = true
 libc.workspace = true
-openssl.workspace = true
 page_size.workspace = true
 serde.workspace = true
 serde_cbor.workspace = true
