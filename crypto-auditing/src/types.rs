@@ -152,19 +152,6 @@ impl EventGroup {
             == <i32 as TryInto<u64>>::try_into(pid).unwrap()
     }
 
-    /// Returns encrypted context ID associated with the event group
-    pub fn encrypt_context<F>(&mut self, f: F) -> Result<(), Box<dyn std::error::Error>>
-    where
-        F: Fn(&mut ContextId) -> Result<(), Box<dyn std::error::Error>>,
-    {
-        f(&mut self.context)?;
-
-        if let Some(Event::NewContext { parent, .. }) = self.events.last_mut() {
-            f(parent)?;
-        }
-        Ok(())
-    }
-
     /// Merges this event group with another which shares the same context ID
     pub fn coalesce(&mut self, other: &mut Self) {
         self.end = other.end;
