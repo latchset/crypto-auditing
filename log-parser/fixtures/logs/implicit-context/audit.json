@@ -1,0 +1,134 @@
+[
+  {
+    "context": "e0ee92d7d47f0000fc520000fc520000",
+    "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+    "executable": "openssl",
+    "start": 1788130540.5252562,
+    "end": 1788130540.5252562,
+    "events": {
+      "name": "tls::handshake",
+      "tls::ciphersuite": 50336514,
+      "tls::protocol_version": 772,
+      "tls::role": "client"
+    },
+    "spans": [
+      {
+        "context": "e0ee92d7d47f0000fc520000fc520500",
+        "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+        "executable": "openssl",
+        "start": 1788130540.527962,
+        "end": 1788130540.527962,
+        "events": {
+          "name": "tls::key_exchange",
+          "tls::group": 4588
+        },
+        "spans": [
+          {
+            "context": "e0ee92d7d47f0000fc520000fc520600",
+            "origin": "7be1d4805e872a99af2ee8680507e00448152682",
+            "executable": "openssl",
+            "start": 1788130540.528327,
+            "end": 1788130540.528327,
+            "events": {
+              "name": "pk::derive",
+              "pk::group": "x25519"
+            }
+          }
+        ]
+      },
+      {
+        "context": "e0ee92d7d47f0000fc520000fc520700",
+        "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+        "executable": "openssl",
+        "start": 1788130540.528553,
+        "end": 1788130540.528553,
+        "events": {
+          "name": "tls::verify_cert_chain"
+        }
+      },
+      {
+        "context": "e0ee92d7d47f0000fc520000fc520800",
+        "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+        "executable": "openssl",
+        "start": 1788130540.5287695,
+        "end": 1788130540.5287695,
+        "events": {
+          "name": "tls::verify",
+          "tls::signature_algorithm": 2052
+        }
+      }
+    ]
+  },
+  {
+    "context": "e0eeb2b7fe7e0000f2520000f2520100",
+    "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+    "executable": "openssl",
+    "start": 1788130540.5258076,
+    "end": 1788130540.5258076,
+    "events": {
+      "name": "tls::handshake",
+      "tls::ciphersuite": 50336514,
+      "tls::protocol_version": 772,
+      "tls::role": "server"
+    },
+    "spans": [
+      {
+        "context": "e0eeb2b7fe7e0000f2520000f2520200",
+        "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+        "executable": "openssl",
+        "start": 1788130540.5260968,
+        "end": 1788130540.5260968,
+        "events": {
+          "name": "tls::key_exchange",
+          "tls::group": 4588
+        },
+        "spans": [
+          {
+            "context": "e0eeb2b7fe7e0000f2520000f2520300",
+            "origin": "7be1d4805e872a99af2ee8680507e00448152682",
+            "executable": "openssl",
+            "start": 1788130540.5265322,
+            "end": 1788130540.5265322,
+            "events": {
+              "name": "pk::derive",
+              "pk::group": "x25519"
+            }
+          }
+        ]
+      },
+      {
+        "context": "e0eeb2b7fe7e0000f2520000f2520400",
+        "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+        "executable": "openssl",
+        "start": 1788130540.526772,
+        "end": 1788130540.526772,
+        "events": {
+          "name": "tls::sign",
+          "tls::signature_algorithm": 2052
+        }
+      }
+    ]
+  },
+  {
+    "context": "e0ee92d7d47f0000fc520000fc520900",
+    "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+    "executable": "openssl",
+    "start": 1788130540.5337772,
+    "end": 1788130540.5337772,
+    "events": {
+      "name": "tls::handshake",
+      "tls::role": "client"
+    }
+  },
+  {
+    "context": "e0ee92d7d47f0000fc520000fc520a00",
+    "origin": "9ce458cd5e882fa6586ff3bcfbf27c8fe6decdcd",
+    "executable": "openssl",
+    "start": 1788130540.5339756,
+    "end": 1788130540.5339756,
+    "events": {
+      "name": "tls::handshake",
+      "tls::role": "client"
+    }
+  }
+]

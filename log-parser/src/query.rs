@@ -4,6 +4,7 @@
 use anyhow::{Context as _, Result};
 use crypto_auditing::{
     ContextTracker,
+    schema::Schema,
     types::{EventData, EventGroup},
 };
 use pager::Pager;
@@ -38,22 +39,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_iter::<EventGroup>()
         .peekable();
 
+    let metadata = if let Some(Ok(group)) = groups.peek()
+        && group.is_metadata()
+    {
+        groups
+            .next()
+            .map(|group| group.expect("should be a metadata group"))
+    } else {
+        None
+    };
+
     // Figure out the system boot time, first from the config, and
     // then from the metadata group in the log
     let boot_time = if let Some(secs) = config.boot_time {
         Some(UNIX_EPOCH + Duration::from_secs(secs))
-    } else if let Some(Ok(group)) = groups.peek()
-        && group.is_metadata()
-    {
-        let boot_time = get_boot_time_from_metadata(&group);
-        // Skip the metadata group
-        groups.next();
-        boot_time
+    } else if let Some(metadata) = metadata {
+        get_boot_time_from_metadata(&metadata)
     } else {
         None
     };
 
     let mut tracker = ContextTracker::new(boot_time);
+    let schema = Schema::builtin();
+    tracker.set_schema(&schema);
+
     for group in groups {
         tracker.handle_event_group(&group?);
     }
