@@ -129,13 +129,20 @@ scope this {
     s1: string;
     context c2 {
       u1: uint16;
-      allowed_children c1, other::*;
+      allowed_children c3, other::*;
     }
+  }
+  context c3 {
+    i1: int16;
   }
 }
 ```
 
-Here, context `c2` explicitly permits either `this::c1` or any
-top-level context defined within the other scope to appear as valid
+Here, context `c2` explicitly permits either `this::c3` or any
+top-level context defined within the `other` scope to appear as valid
 runtime children.
 
+Note that any recursive definitions, either direct or indirect, are
+prohibited. In this example, it is an error to write `allowed_children c1;`
+instead of `allowed_children c3, other::*;` even if `c1` is also
+a top-level.
