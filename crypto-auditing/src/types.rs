@@ -54,6 +54,29 @@ pub enum EventData {
     ),
 }
 
+impl EventData {
+    pub fn word(&self) -> Option<i64> {
+        match self {
+            EventData::Word(word) => Some(*word),
+            _ => None,
+        }
+    }
+
+    pub fn string(&self) -> Option<&str> {
+        match self {
+            EventData::String(string) => Some(string),
+            _ => None,
+        }
+    }
+
+    pub fn blob(&self) -> Option<&[u8]> {
+        match self {
+            EventData::Blob(blob) => Some(blob),
+            _ => None,
+        }
+    }
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Event {
