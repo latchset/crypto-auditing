@@ -43,6 +43,12 @@ pub struct Context {
     pub spans: Vec<Rc<RefCell<Context>>>,
 }
 
+impl Context {
+    pub fn name(&self) -> Option<&str> {
+        self.events.get("name").and_then(|data| data.string())
+    }
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
@@ -52,6 +58,29 @@ pub enum EventData {
     Blob(
         #[serde_as(as = "serde_with::Bytes")] Vec<u8>, // TODO: try ArrayVec?
     ),
+}
+
+impl EventData {
+    pub fn word(&self) -> Option<i64> {
+        match self {
+            EventData::Word(word) => Some(*word),
+            _ => None,
+        }
+    }
+
+    pub fn string(&self) -> Option<&str> {
+        match self {
+            EventData::String(string) => Some(string),
+            _ => None,
+        }
+    }
+
+    pub fn blob(&self) -> Option<&[u8]> {
+        match self {
+            EventData::Blob(blob) => Some(blob),
+            _ => None,
+        }
+    }
 }
 
 #[serde_as]
