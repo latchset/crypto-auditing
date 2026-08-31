@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+WHITESPACE = _{ " " | NEWLINE }
+COMMENT = _{
+    | "/*" ~ (!"*/" ~ ANY)* ~ "*/"
+}
+
+ident = @{ (ASCII_ALPHANUMERIC | "_" | "-")* }
+
+ty = {
+    "string"
+  | "blob"
+  | "bool"
+  | "uint8"
+  | "uint16"
+  | "uint32"
+  | "uint64"
+  | "int8"
+  | "int16"
+  | "int32"
+  | "int64"
+}
+
+scope = { "scope" ~ ident ~ "{" ~ context_event* ~ "}" }
+
+data_event = { ident ~ ":" ~ ty ~ ";" }
+
+context_event = {
+    "context" ~ context_names ~ "{" ~ context_inner* ~ "}"
+}
+
+event = _{ data_event | context_event }
+
+context_names = { ident ~ ("," ~ ident)* }
+
+context_inner = _{
+    event
+  | allowed_children
+}
+
+wildcard = { "*" }
+context_pattern = _{ wildcard | ident }
+scoped_context_pattern = { (#scope = ident ~ "::")? ~ context_pattern }
+
+scoped_context_patterns = _{
+    scoped_context_pattern
+    ~ ("," ~ scoped_context_pattern)*
+}
+
+allowed_children = { "allowed_children" ~ scoped_context_patterns ~ ";" }
+
+schema = {
+      SOI
+      ~ scope*
+      ~ EOI
+}
