@@ -1,0 +1,75 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* Public key cryptography */
+scope pk {
+  /* A digital signature is created or verified */
+  context sign, verify {
+    algorithm: string;
+    curve: string;
+    bits: uint16;
+    hash: string;
+    rsa_padding: string;
+  }
+
+  /* Encryption or decryption is performed */
+  context encrypt, decrypt {
+    algorithm: string;
+    bits: uint16;
+    hash: string;
+    rsa_padding: string;
+  }
+
+  /* A session key is encapsulated or decapsulated */
+  context encapsulate, decapsulate {
+    algorithm: string;
+  }
+
+  /* A private key is generated */
+  context generate {
+    algorithm: string;
+    curve: string;
+    group: string;
+    bits: uint16;
+  }
+
+  /* A shared secret is generated */
+  context derive {
+    algorithm: string;
+    curve: string;
+    group: string;
+    bits: uint16;
+    static: bool;
+  }
+}
+
+/* TLS */
+scope tls {
+  /* A TLS handshake is in progress */
+  context handshake {
+    role: string;
+    protocol_version: uint16;
+    ciphersuite: uint16;
+
+    /* Traffic keys are derived in TLS handshake */
+    context key_exchange {
+      group: uint16;
+
+      /* A key exchange may involve ephemeral key generation, shared secret derivation, and KEM encapsulation and decapsulation */
+      allowed_children pk::generate, pk::derive, pk::encapsulate, pk::decapsulate;
+    }
+
+    /* A TLS handshake message (e.g., CertificateVerify in TLS 1.3) is digitally signed or verified */
+    context sign, verify {
+      signature_algorithm: uint16;
+      allowed_children pk::sign, pk::verify;
+    }
+
+    /* A certificate chain presented during a TLS handshake is verified */
+    context verify_cert_chain {
+      allowed_children pk::verify;
+    }
+
+    /* Extended master secret is used */
+    extended_master_secret: bool;
+  }
+}
