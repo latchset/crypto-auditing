@@ -92,10 +92,10 @@ pub struct EventGroup {
     events: Vec<Event>,
 }
 
-fn format_context_id(pid_tgid: u64, context: i64) -> ContextId {
+fn format_context_id(context: i64, pid_tgid: u64) -> ContextId {
     let mut result: ContextId = Default::default();
-    result[..8].copy_from_slice(&u64::to_le_bytes(pid_tgid));
-    result[8..].copy_from_slice(&i64::to_le_bytes(context));
+    result[..8].copy_from_slice(&i64::to_le_bytes(context));
+    result[8..].copy_from_slice(&u64::to_le_bytes(pid_tgid));
     result
 }
 
@@ -172,13 +172,13 @@ impl EventGroup {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
         let context =
-            unsafe { format_context_id((*header).pid_tgid.into(), (*header).context.into()) };
+            unsafe { format_context_id((*header).context.into(), (*header).pid_tgid.into()) };
         let ktime = unsafe { Duration::from_nanos((*header).ktime.into()) };
         let event = match unsafe { (*header).type_ } {
             audit_event_type_t::AUDIT_EVENT_NEW_CONTEXT => {
                 let raw_new_context = bytes.as_ptr() as *mut audit_new_context_event_st;
                 let parent = unsafe {
-                    format_context_id((*header).pid_tgid.into(), (*raw_new_context).parent.into())
+                    format_context_id((*raw_new_context).parent.into(), (*header).pid_tgid.into())
                 };
                 let origin = unsafe {
                     (&(*raw_new_context).origin)[..(*raw_new_context).origin_size as usize].to_vec()
