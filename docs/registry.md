@@ -38,14 +38,8 @@ scope pk {
     rsa_padding: string;
   }
 
-  context encapsulate {
+  context encapsulate, decapsulate {
     algorithm: string;
-    allowed_children derive, encapsulate; /* for hybrid construction */
-  }
-
-  context decapsulate {
-    algorithm: string;
-    allowed_children derive, decapsulate; /* for hybrid construction */
   }
 
   context generate {
