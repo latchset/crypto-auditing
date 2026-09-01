@@ -4,14 +4,10 @@
 use anyhow::{Context as _, Result, bail};
 use caps::{CapSet, Capability, CapsHashSet};
 use core::future::Future;
-use crypto_auditing::types::{ContextId, EventGroup};
+use crypto_auditing::types::EventGroup;
 use libbpf_rs::{
     RingBufferBuilder,
     skel::{OpenSkel, SkelBuilder},
-};
-use openssl::{
-    rand::rand_bytes,
-    symm::{Cipher, Crypter, Mode},
 };
 use std::io::prelude::*;
 use std::mem::MaybeUninit;
@@ -47,31 +43,14 @@ fn bump_memlock_rlimit() -> Result<()> {
     Ok(())
 }
 
-fn encrypt_context(key: impl AsRef<[u8]>, context: &ContextId) -> Result<ContextId> {
-    let cipher = Cipher::aes_128_ecb();
-    let mut encryptor = Crypter::new(cipher, Mode::Encrypt, key.as_ref(), None).unwrap();
-    encryptor.pad(false);
-
-    let mut ciphertext = vec![0; context.len() + cipher.block_size()];
-    let mut count = encryptor.update(context, &mut ciphertext).unwrap();
-    count += encryptor.finalize(&mut ciphertext).unwrap();
-    ciphertext.truncate(count);
-
-    Ok(ciphertext.try_into().unwrap())
-}
-
 struct Tracer {
     writer: Box<dyn std::io::Write>,
     instant: Instant,
 }
 
 impl Tracer {
-    fn write(
-        &mut self,
-        encryption_key: &[u8],
-        data: &[u8],
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let trace = serde_cbor::ser::to_vec(&(self.instant.elapsed(), encryption_key, data))?;
+    fn write(&mut self, data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+        let trace = serde_cbor::ser::to_vec(&(self.instant.elapsed(), data))?;
         let _ = self.writer.write(&trace)?;
         self.writer.flush()?;
         Ok(())
@@ -192,16 +171,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let cipher = Cipher::aes_128_ecb();
-    let mut encryption_key = vec![0; cipher.key_len()];
-    rand_bytes(&mut encryption_key)?;
-
     start(async {
         let (event_tx, mut event_rx) = mpsc::unbounded_channel::<EventGroup>();
         let handle = runtime::Handle::current();
         let mut builder = RingBufferBuilder::new();
         builder.add(&skel.maps.ringbuf, |data| {
-            if let Err(e) = tracer.write(&encryption_key, data) {
+            if let Err(e) = tracer.write(data) {
                 info!(error = %e, "error writing trace");
             }
             match EventGroup::from_bytes(data) {
@@ -250,19 +225,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 },
 
-                Some(mut group) = event_rx.recv() => {
+                Some(group) = event_rx.recv() => {
                     // Ignore groups from ourselves
                     if group.matches_pid(unsafe { libc::getpid() }) {
                         debug!("skipping group as pid matches the self");
-                        continue;
-                    }
-
-                    // Encrypt context IDs that appear in the event read
-                    if let Err(e) = group.encrypt_context(|context: &mut ContextId| {
-                        *context = encrypt_context(&encryption_key[..], context)?;
-                        Ok(())
-                    }) {
-                        info!(error = %e, "error encrypting context ID");
                         continue;
                     }
 
@@ -324,18 +290,10 @@ mod tests {
         let mut v = serde_cbor::ser::to_vec(&metadata).expect("unable to serialize to CBOR");
         output.append(&mut v);
 
-        for res in
-            Deserializer::from_reader(&input_file).into_iter::<(Duration, Vec<u8>, Vec<u8>)>()
-        {
-            let (_duration, encryption_key, buffer) = res.expect("unable to deserialize trace");
-            let mut group =
+        for res in Deserializer::from_reader(&input_file).into_iter::<(Duration, Vec<u8>)>() {
+            let (_duration, buffer) = res.expect("unable to deserialize trace");
+            let group =
                 EventGroup::from_bytes(&buffer).expect("unable to deserialize to EventGroup");
-            group
-                .encrypt_context(|context: &mut ContextId| {
-                    *context = encrypt_context(&encryption_key[..], context)?;
-                    Ok(())
-                })
-                .expect("unable to encrypt context");
             let mut v = serde_cbor::ser::to_vec(&group).expect("unable to serialize to CBOR");
             output.append(&mut v);
         }

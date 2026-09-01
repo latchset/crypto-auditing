@@ -43,6 +43,12 @@ pub struct Context {
     pub spans: Vec<Rc<RefCell<Context>>>,
 }
 
+impl Context {
+    pub fn name(&self) -> Option<&str> {
+        self.events.get("name").and_then(|data| data.string())
+    }
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
@@ -52,6 +58,29 @@ pub enum EventData {
     Blob(
         #[serde_as(as = "serde_with::Bytes")] Vec<u8>, // TODO: try ArrayVec?
     ),
+}
+
+impl EventData {
+    pub fn word(&self) -> Option<i64> {
+        match self {
+            EventData::Word(word) => Some(*word),
+            _ => None,
+        }
+    }
+
+    pub fn string(&self) -> Option<&str> {
+        match self {
+            EventData::String(string) => Some(string),
+            _ => None,
+        }
+    }
+
+    pub fn blob(&self) -> Option<&[u8]> {
+        match self {
+            EventData::Blob(blob) => Some(blob),
+            _ => None,
+        }
+    }
 }
 
 #[serde_as]
@@ -92,10 +121,10 @@ pub struct EventGroup {
     events: Vec<Event>,
 }
 
-fn format_context_id(pid_tgid: u64, context: i64) -> ContextId {
+fn format_context_id(context: i64, pid_tgid: u64) -> ContextId {
     let mut result: ContextId = Default::default();
-    result[..8].copy_from_slice(&u64::to_le_bytes(pid_tgid));
-    result[8..].copy_from_slice(&i64::to_le_bytes(context));
+    result[..8].copy_from_slice(&i64::to_le_bytes(context));
+    result[8..].copy_from_slice(&u64::to_le_bytes(pid_tgid));
     result
 }
 
@@ -152,19 +181,6 @@ impl EventGroup {
             == <i32 as TryInto<u64>>::try_into(pid).unwrap()
     }
 
-    /// Returns encrypted context ID associated with the event group
-    pub fn encrypt_context<F>(&mut self, f: F) -> Result<(), Box<dyn std::error::Error>>
-    where
-        F: Fn(&mut ContextId) -> Result<(), Box<dyn std::error::Error>>,
-    {
-        f(&mut self.context)?;
-
-        if let Some(Event::NewContext { parent, .. }) = self.events.last_mut() {
-            f(parent)?;
-        }
-        Ok(())
-    }
-
     /// Merges this event group with another which shares the same context ID
     pub fn coalesce(&mut self, other: &mut Self) {
         self.end = other.end;
@@ -185,13 +201,13 @@ impl EventGroup {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = bytes.as_ptr() as *mut audit_event_header_st;
         let context =
-            unsafe { format_context_id((*header).pid_tgid.into(), (*header).context.into()) };
+            unsafe { format_context_id((*header).context.into(), (*header).pid_tgid.into()) };
         let ktime = unsafe { Duration::from_nanos((*header).ktime.into()) };
         let event = match unsafe { (*header).type_ } {
             audit_event_type_t::AUDIT_EVENT_NEW_CONTEXT => {
                 let raw_new_context = bytes.as_ptr() as *mut audit_new_context_event_st;
                 let parent = unsafe {
-                    format_context_id((*header).pid_tgid.into(), (*raw_new_context).parent.into())
+                    format_context_id((*raw_new_context).parent.into(), (*header).pid_tgid.into())
                 };
                 let origin = unsafe {
                     (&(*raw_new_context).origin)[..(*raw_new_context).origin_size as usize].to_vec()
