@@ -352,6 +352,7 @@ dependencies = [
  "futures",
  "libbpf-cargo",
  "libbpf-rs",
+ "libbpf-sys",
  "libc",
  "openssl",
  "page_size",

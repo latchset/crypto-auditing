@@ -9,6 +9,7 @@ use libbpf_rs::{
     RingBufferBuilder,
     skel::{OpenSkel, SkelBuilder},
 };
+use libbpf_sys::BPF_F_SLEEPABLE;
 use openssl::{
     rand::rand_bytes,
     symm::{Cipher, Crypter, Mode},
@@ -137,7 +138,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let skel_builder = AuditSkelBuilder::default();
     let mut storage = MaybeUninit::uninit();
-    let open_skel = skel_builder.open(&mut storage)?;
+    let mut open_skel = skel_builder.open(&mut storage)?;
+    open_skel.progs.new_context.set_flags(BPF_F_SLEEPABLE);
+    open_skel.progs.string_data.set_flags(BPF_F_SLEEPABLE);
+    open_skel.progs.word_data.set_flags(BPF_F_SLEEPABLE);
+    open_skel.progs.blob_data.set_flags(BPF_F_SLEEPABLE);
+    open_skel
+        .progs
+        .new_context_with_data
+        .set_flags(BPF_F_SLEEPABLE);
+    open_skel.progs.data.set_flags(BPF_F_SLEEPABLE);
     let skel = open_skel.load()?;
 
     let mut links = Vec::new();

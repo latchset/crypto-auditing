@@ -7,7 +7,7 @@
  * bpf_stream_vprintk.
  */
 #include <bpf/libbpf_version.h>
-#if defined(LIBBPF_MAJOR_VERSION) && defined(LIBBPF_MINOR_VERSION) && \
+#if defined(LIBBPF_MAJOR_VERSION) && defined(LIBBPF_MINOR_VERSION) &&	\
   LIBBPF_MAJOR_VERSION == 1 && LIBBPF_MINOR_VERSION == 6
 # define bpf_stream_vprintk bpf_stream_vprintk_UNUSED
 #endif
@@ -16,8 +16,8 @@
 #include <bpf/usdt.bpf.h>
 #include "audit.h"
 
-#define DEBUG(format, ...)			\
-  bpf_trace_printk ("%s: " format, sizeof("%s: " format), \
+#define DEBUG(format, ...)					\
+  bpf_trace_printk ("%s: " format, sizeof("%s: " format),	\
 		    __PRETTY_FUNCTION__, __VA_ARGS__)
 
 #define MAX_EVENTS 16
@@ -31,8 +31,8 @@ struct crypto_auditing_data {
 };
 
 struct {
-    __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 4096 /* one page */);
+  __uint(type, BPF_MAP_TYPE_RINGBUF);
+  __uint(max_entries, 4096 /* one page */);
 } ringbuf SEC(".maps");
 
 static __always_inline void
@@ -114,6 +114,33 @@ record_new_context (struct pt_regs *ctx, long context, long parent)
   return err;
 }
 
+static __always_inline long
+read_user (void *dst, u32 size, const void *unsafe_ptr)
+{
+  return bpf_copy_from_user (dst, size, unsafe_ptr);
+}
+
+static __always_inline long
+read_user_str (void *dst, u32 size, const void *unsafe_ptr)
+{
+  /* bpf_copy_from_user_str was introduced in kernel v6.12, check if
+   * it is available or falls back to bpf_copy_from_user with extra
+   * NUL-termination.
+   */
+  if (bpf_ksym_exists (bpf_copy_from_user_str))
+    return bpf_copy_from_user_str (dst, size, unsafe_ptr, BPF_ANY);
+  else
+    {
+      if (!size)
+	return -EINVAL;
+
+      long err = bpf_copy_from_user (dst, size, unsafe_ptr);
+      if (!err)
+	((u8 *)dst)[size - 1] = '\0';
+      return err;
+    }
+}
+
 static __always_inline int
 record_word_data (struct pt_regs *ctx, long context, const char *key_ptr,
 		  long value)
@@ -136,7 +163,7 @@ record_word_data (struct pt_regs *ctx, long context, const char *key_ptr,
 			 context);
 
   event->base.type = AUDIT_DATA_WORD;
-  err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
+  err = read_user_str (event->base.key, KEY_SIZE, (const void *)key_ptr);
   if (err < 0)
     {
       DEBUG ("unable to read event key: %ld\n", err);
@@ -174,15 +201,14 @@ record_string_data (struct pt_regs *ctx, long context, const char *key_ptr,
 			 context);
 
   event->base.type = AUDIT_DATA_STRING;
-  err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
+  err = read_user_str (event->base.key, KEY_SIZE, (const void *)key_ptr);
   if (err < 0)
     {
       DEBUG ("unable to read event key: %ld\n", err);
       goto error;
     }
 
-  err = bpf_probe_read_user_str (event->value, VALUE_SIZE,
-				 (void *)value_ptr);
+  err = read_user_str (event->value, VALUE_SIZE, (const void *)value_ptr);
   if (err < 0)
     {
       DEBUG ("unable to read event data: %ld\n", err);
@@ -234,7 +260,7 @@ record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr)
 			 context);
 
   event->base.type = AUDIT_DATA_BLOB;
-  err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
+  err = read_user_str (event->base.key, KEY_SIZE, (const void *)key_ptr);
   if (err < 0)
     {
       DEBUG ("unable to read event key: %ld\n", err);
@@ -252,7 +278,7 @@ record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr)
 	  goto error;
 	}
 
-      err = bpf_probe_read_user (event->value, value_size, (void *)value_ptr);
+      err = read_user (event->value, value_size, (const void *)value_ptr);
       if (err < 0)
 	{
 	  DEBUG ("unable to read event data: %ld\n", err);
@@ -301,7 +327,7 @@ record_blob_data_explicit (struct pt_regs *ctx, long context, const char *key_pt
 			 context);
 
   event->base.type = AUDIT_DATA_BLOB;
-  err = bpf_probe_read_user_str (event->base.key, KEY_SIZE, (void *)key_ptr);
+  err = read_user_str (event->base.key, KEY_SIZE, (const void *)key_ptr);
   if (err < 0)
     {
       DEBUG ("unable to read event key: %ld\n", err);
@@ -310,7 +336,7 @@ record_blob_data_explicit (struct pt_regs *ctx, long context, const char *key_pt
 
   if (value_size > 0)
     {
-      err = bpf_probe_read_user (event->value, value_size, (void *)value_ptr);
+      err = read_user (event->value, value_size, (const void *)value_ptr);
       if (err < 0)
 	{
 	  DEBUG ("unable to read event data: %ld\n", err);
@@ -344,9 +370,9 @@ record_data (struct pt_regs *ctx,
     }
   array_size &= MAX_EVENTS - 1;
 
-  err = bpf_probe_read_user (events,
-			     array_size * sizeof (struct crypto_auditing_data),
-			     array_ptr);
+  err = read_user (events,
+		   array_size * sizeof (struct crypto_auditing_data),
+		   array_ptr);
   if (err < 0)
     {
       DEBUG ("unable to read from data array: %ld\n", err);
