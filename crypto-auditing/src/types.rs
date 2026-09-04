@@ -43,6 +43,12 @@ pub struct Context {
     pub spans: Vec<Rc<RefCell<Context>>>,
 }
 
+impl Context {
+    pub fn name(&self) -> Option<&str> {
+        self.events.get("name").and_then(|data| data.string())
+    }
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
