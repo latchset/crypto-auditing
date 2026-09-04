@@ -44,15 +44,13 @@ impl ContextTracker {
             .map(|context| Rc::into_inner(context).unwrap().into_inner())
     }
 
+    fn resolve_system_time(&self, time: Duration) -> SystemTime {
+        self.boot_time.checked_add(time).unwrap_or(UNIX_EPOCH)
+    }
+
     pub fn handle_event_group(&mut self, group: &EventGroup) -> usize {
-        let start = self
-            .boot_time
-            .checked_add(group.start())
-            .unwrap_or(UNIX_EPOCH);
-        let end = self
-            .boot_time
-            .checked_add(group.end())
-            .unwrap_or(UNIX_EPOCH);
+        let start = self.resolve_system_time(group.start());
+        let end = self.resolve_system_time(group.end());
         let mut count = 0;
         for event in group.events() {
             match event {
