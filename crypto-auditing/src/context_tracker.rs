@@ -67,8 +67,7 @@ impl ContextTracker {
                         executable: executable.to_owned(),
                         start,
                         end,
-                        events: Default::default(),
-                        spans: Default::default(),
+                        ..Default::default()
                     }));
                     if let Some(parent) = self
                         .all_contexts
@@ -101,12 +100,9 @@ impl ContextTracker {
                         // this message.
                         let context_obj = Rc::new(RefCell::new(Context {
                             id: *group.context(),
-                            origin: Default::default(),
-                            executable: Default::default(),
                             start,
                             end,
-                            events: Default::default(),
-                            spans: Default::default(),
+                            ..Default::default()
                         }));
                         self.root_contexts.push(context_obj.clone());
                         self.all_contexts.push(context_obj);
