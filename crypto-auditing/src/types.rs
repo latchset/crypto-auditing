@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::rc::Rc;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::System;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -46,6 +46,20 @@ pub struct Context {
 impl Context {
     pub fn name(&self) -> Option<&str> {
         self.events.get("name").and_then(|data| data.string())
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            id: Default::default(),
+            origin: Default::default(),
+            executable: Default::default(),
+            start: UNIX_EPOCH.into(),
+            end: UNIX_EPOCH.into(),
+            events: Default::default(),
+            spans: Default::default(),
+        }
     }
 }
 
