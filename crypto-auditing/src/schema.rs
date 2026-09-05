@@ -3,6 +3,7 @@
 
 use pest::Parser;
 use pest::iterators::Pair;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 #[derive(Parser)]
@@ -103,6 +104,7 @@ pub struct Scope {
 #[derive(Debug, Default)]
 pub struct Schema {
     pub scopes: Vec<Scope>,
+    parents: HashMap<Name, Vec<Name>>,
 }
 
 fn parse_allowed_children(name: &str, pair: Pair<Rule>) -> Vec<Pattern> {
@@ -174,7 +176,7 @@ fn parse_context_event(name: &str, pair: Pair<Rule>) -> Vec<ContextEvent> {
                 events.append(
                     &mut parse_context_event(name, inner)
                         .into_iter()
-                        .map(|event| Event::ContextEvent(event))
+                        .map(Event::ContextEvent)
                         .collect(),
                 );
             }
@@ -221,12 +223,133 @@ impl Schema {
                 scopes.push(parse_scope(scope_pair))
             }
         }
-        Ok(Self { scopes })
+        let mut schema = Self {
+            scopes,
+            ..Default::default()
+        };
+        schema.extract_parents();
+        Ok(schema)
     }
 
     /// Returns a built-in schema
     pub fn builtin() -> Self {
         let source = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/builtin.schema"));
-        Schema::parse(source).expect("unable to read builtin schema")
+        Self::parse(source).expect("unable to read builtin schema")
+    }
+
+    /// Returns `true` if `parent_name` can be a parent of `name`
+    pub fn is_parent(&self, parent_name: &Name, name: &Name) -> bool {
+        self.parents
+            .get(name)
+            .map(|parents| parents.iter().any(|x| x == parent_name))
+            .unwrap_or(false)
+    }
+
+    fn extract_direct_parents(
+        parents: &mut HashMap<Name, Vec<Name>>,
+        scope: &Scope,
+        parent: &ContextEvent,
+    ) {
+        let mut children = Vec::new();
+        for event in parent.events.iter() {
+            if let Event::ContextEvent(child) = event {
+                children.push(Name::new(&scope.name, &child.name));
+                Self::extract_direct_parents(parents, scope, child);
+            }
+        }
+        for child in children {
+            parents.insert(child, vec![Name::new(&scope.name, &parent.name)]);
+        }
+    }
+
+    fn extract_allowed_children(
+        parents: &mut HashMap<Name, Vec<Name>>,
+        scope: &Scope,
+        parent: &ContextEvent,
+        roots: &HashMap<String, Vec<Name>>,
+    ) {
+        let mut children = Vec::new();
+        for pattern in parent.allowed_children.iter() {
+            match pattern {
+                Pattern {
+                    scope: s,
+                    context: None,
+                } => {
+                    if let Some(r) = roots.get(s) {
+                        children.append(&mut r.to_vec());
+                    }
+                }
+                Pattern {
+                    scope: s,
+                    context: Some(c),
+                } => {
+                    children.push(Name::new(s, c));
+                }
+            }
+        }
+        for event in parent.events.iter() {
+            if let Event::ContextEvent(child) = event {
+                Self::extract_allowed_children(parents, scope, child, roots);
+            }
+        }
+        for child in children {
+            if let Some(v) = parents.get_mut(&child) {
+                v.push(child);
+            } else {
+                parents.insert(
+                    child,
+                    vec![Name::new(scope.name.as_str(), parent.name.as_str())],
+                );
+            }
+        }
+    }
+
+    fn extract_parents(&mut self) {
+        // Extract root contexts
+        let mut roots: HashMap<String, Vec<Name>> = HashMap::new();
+        for scope in self.scopes.iter() {
+            roots.insert(
+                scope.name.to_owned(),
+                scope
+                    .context_events
+                    .iter()
+                    .map(|c| Name::new(&scope.name, &c.name))
+                    .collect(),
+            );
+        }
+
+        // Recursively extract direct mappings
+        for scope in self.scopes.iter() {
+            for context in scope.context_events.iter() {
+                Self::extract_direct_parents(&mut self.parents, scope, context);
+            }
+        }
+
+        // Recursively extract indirect mappings through
+        // allowed_children
+        for scope in self.scopes.iter() {
+            for context in scope.context_events.iter() {
+                Self::extract_allowed_children(&mut self.parents, scope, context, &roots);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_parent() {
+        let builtin = Schema::builtin();
+        assert!(builtin.is_parent(
+            &Name::new("tls", "handshake"),
+            &Name::new("tls", "verify_cert_chain")
+        ));
+        assert!(builtin.is_parent(
+            &Name::new("tls", "key_exchange"),
+            &Name::new("pk", "encapsulate")
+        ));
+        assert!(!builtin.is_parent(&Name::new("tls", "sign"), &Name::new("pk", "encapsulate")));
     }
 }
