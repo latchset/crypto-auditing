@@ -69,6 +69,17 @@ impl Display for NameParseError {
 
 impl std::error::Error for NameParseError {}
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ValueError {}
+
+impl Display for ValueError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "invalid value")
+    }
+}
+
+impl std::error::Error for ValueError {}
+
 impl TryFrom<&str> for Name {
     type Error = NameParseError;
 
