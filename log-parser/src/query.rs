@@ -11,6 +11,7 @@ use pager::Pager;
 use serde_cbor::de::Deserializer;
 use std::io::{self, Write};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 mod config;
 
@@ -30,6 +31,11 @@ fn get_boot_time_from_metadata(group: &EventGroup) -> Option<SystemTime> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::new()?;
+
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .try_init()?;
 
     Pager::new().setup();
 
