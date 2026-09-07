@@ -304,3 +304,45 @@ impl EventGroup {
         Ok(event)
     }
 }
+
+pub struct EventGroupBuilder {
+    group: Option<EventGroup>,
+}
+
+impl EventGroupBuilder {
+    pub fn new(context: ContextId) -> Self {
+        Self {
+            group: Some(EventGroup {
+                context,
+                start: Default::default(),
+                end: Default::default(),
+                events: Default::default(),
+            }),
+        }
+    }
+
+    pub fn start(mut self, start: Duration) -> Self {
+        if let Some(ref mut group) = self.group {
+            group.start = start
+        }
+        self
+    }
+
+    pub fn end(mut self, end: Duration) -> Self {
+        if let Some(ref mut group) = self.group {
+            group.end = end
+        }
+        self
+    }
+
+    pub fn event(mut self, event: Event) -> Self {
+        if let Some(ref mut group) = self.group {
+            group.events.push(event)
+        }
+        self
+    }
+
+    pub fn build(mut self) -> EventGroup {
+        self.group.take().unwrap()
+    }
+}
