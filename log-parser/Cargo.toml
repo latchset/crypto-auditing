@@ -26,6 +26,9 @@ toml.workspace = true
 pager.workspace = true
 parse_datetime.workspace = true
 
+[dev-dependencies]
+similar-asserts.workspace = true
+
 [[bin]]
 name = "crau-query"
 path = "src/query.rs"
