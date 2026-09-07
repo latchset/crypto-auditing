@@ -2,6 +2,7 @@
 // Copyright (C) 2026 The crypto-auditing developers.
 
 use anyhow::{Result, bail};
+use similar_asserts::assert_eq;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -73,6 +74,8 @@ fn test_since_until() {
             .join("none.json"),
     )
     .expect("should read since-until/none.json");
+    let output = String::from_utf8(output).expect("should be in valid UTF-8");
+    let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
 
     let output =
@@ -84,6 +87,8 @@ fn test_since_until() {
             .join("since.json"),
     )
     .expect("should read since-until/since.json");
+    let output = String::from_utf8(output).expect("should be in valid UTF-8");
+    let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
 
     let output = run_query(
@@ -98,6 +103,8 @@ fn test_since_until() {
             .join("since-until.json"),
     )
     .expect("should read since-until/since-until.json");
+    let output = String::from_utf8(output).expect("should be in valid UTF-8");
+    let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
 
     let output =
@@ -109,5 +116,7 @@ fn test_since_until() {
             .join("until.json"),
     )
     .expect("should read since-until/until.json");
+    let output = String::from_utf8(output).expect("should be in valid UTF-8");
+    let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
 }
