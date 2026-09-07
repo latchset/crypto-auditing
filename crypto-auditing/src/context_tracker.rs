@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
-use crate::types::{Context, Event, EventGroup};
+use crate::types::{Context, ContextId, Event, EventGroup};
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::System;
 
 #[derive(Debug)]
 pub struct ContextTracker {
-    all_contexts: Vec<Rc<RefCell<Context>>>,
+    all_contexts: Vec<Weak<RefCell<Context>>>,
     root_contexts: Vec<Rc<RefCell<Context>>>,
     boot_time: SystemTime,
 }
@@ -38,10 +38,28 @@ impl ContextTracker {
                 false
             }
         });
-        self.all_contexts.retain(|context| not_expired(context));
+        let contains = |roots: &Vec<Rc<RefCell<Context>>>, context: &Weak<RefCell<Context>>| {
+            context
+                .upgrade()
+                .filter(|context| {
+                    roots
+                        .iter()
+                        .any(|c| Rc::ptr_eq(c, &context) || c.borrow().contains(&context))
+                })
+                .is_some()
+        };
+        self.all_contexts
+            .retain(|context| !contains(&removed, context));
         removed
             .into_iter()
             .map(|context| Rc::into_inner(context).unwrap().into_inner())
+    }
+
+    fn last_context(&self, id: &ContextId) -> Option<Rc<RefCell<Context>>> {
+        self.all_contexts
+            .iter()
+            .rev()
+            .find_map(|context| context.upgrade().filter(|c| c.borrow().id == *id))
     }
 
     fn resolve_system_time(&self, time: Duration) -> SystemTime {
@@ -67,26 +85,16 @@ impl ContextTracker {
                         end,
                         ..Default::default()
                     }));
-                    if let Some(parent) = self
-                        .all_contexts
-                        .iter()
-                        .rev()
-                        .find(|x| x.borrow().id == parent_context[..])
-                    {
-                        parent.borrow_mut().spans.push(context.clone());
+                    if let Some(parent) = self.last_context(&parent_context) {
+                        self.all_contexts.push(Rc::downgrade(&context));
+                        parent.borrow_mut().spans.push(context);
                     } else {
-                        self.root_contexts.push(context.clone());
+                        self.root_contexts.push(context);
                         count += 1;
                     }
-                    self.all_contexts.push(context);
                 }
                 Event::Data { key, value } => {
-                    if let Some(parent) = self
-                        .all_contexts
-                        .iter()
-                        .rev()
-                        .find(|x| x.borrow().id == *group.context())
-                    {
+                    if let Some(parent) = self.last_context(group.context()) {
                         parent
                             .borrow_mut()
                             .events
@@ -102,8 +110,8 @@ impl ContextTracker {
                             end,
                             ..Default::default()
                         }));
-                        self.root_contexts.push(context_obj.clone());
-                        self.all_contexts.push(context_obj);
+                        self.all_contexts.push(Rc::downgrade(&context_obj));
+                        self.root_contexts.push(context_obj);
                         count += 1;
                     }
                 }
