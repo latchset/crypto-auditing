@@ -35,6 +35,7 @@ bindgen.workspace = true
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
+tracing-test = { workspace = true, features = ["no-env-filter"] }
 
 [[example]]
 name = "client"
