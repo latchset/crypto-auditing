@@ -47,6 +47,16 @@ impl Context {
     pub fn name(&self) -> Option<&str> {
         self.events.get("name").and_then(|data| data.string())
     }
+
+    pub fn contains(&self, context: &Rc<RefCell<Context>>) -> bool {
+        self.spans.iter().any(|c| {
+            if Rc::ptr_eq(&c, context) {
+                true
+            } else {
+                c.borrow().contains(context)
+            }
+        })
+    }
 }
 
 impl Default for Context {
