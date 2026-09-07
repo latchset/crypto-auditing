@@ -172,4 +172,12 @@ impl ContextTracker {
         }
         count
     }
+
+    pub fn root_context_count(&self) -> usize {
+        self.root_contexts.len()
+    }
+
+    pub fn context_count(&self) -> usize {
+        self.all_contexts.len()
+    }
 }
