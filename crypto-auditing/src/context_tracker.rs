@@ -67,6 +67,14 @@ impl ContextTracker {
     }
 
     pub fn flush(&mut self, before: Option<SystemTime>) -> impl IntoIterator<Item = Context> {
+        debug!(root_contexts = %self.root_contexts.len(),
+               larval_contexts = %self.larval_contexts.len(),
+               all_contexts = %self.all_contexts.len(),
+               implicit_contexts = %self.implicit_contexts.len(),
+               parents = %self.parents.len(),
+               explicit_parents = %self.explicit_parents.len(),
+               "usage statistics before flushing");
+
         let mut removed = Vec::new();
         let mut root_contexts = Vec::new();
         let not_expired = |context: &Rc<RefCell<Context>>| matches!(before, Some(before) if context.borrow().start > before);
@@ -114,6 +122,15 @@ impl ContextTracker {
                 .iter()
                 .any(|c| c.upgrade().filter(|c| c.borrow().id == *id).is_some())
         });
+
+        debug!(root_contexts = %self.root_contexts.len(),
+               larval_contexts = %self.larval_contexts.len(),
+               all_contexts = %self.all_contexts.len(),
+               implicit_contexts = %self.implicit_contexts.len(),
+               parents = %self.parents.len(),
+               explicit_parents = %self.explicit_parents.len(),
+               "usage statistics after flushing");
+
         root_contexts
             .into_iter()
             .map(|context| Rc::into_inner(context).unwrap().into_inner())
