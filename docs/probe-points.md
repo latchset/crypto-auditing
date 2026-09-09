@@ -37,7 +37,9 @@ Programs being traced (typically cryptographic libraries) define USDT
 probes as follows:
 
 ```c
-/* Introduce a new context CONTEXT, derived from PARENT */
+/* Assert a parent-child relationship between two contexts, a child
+ * CONTEXT and its PARENT.
+ */
 # define CRYPTO_AUDITING_NEW_CONTEXT(context, parent)				\
 	DTRACE_PROBE2(crypto_auditing, new_context, context, parent)
 
@@ -80,18 +82,52 @@ where `context` can be any object with the size of a machine word
 
 #### Protocol between BPF programs and the agent
 
-There are 4 types of events sent from the BPF program: `new_context`,
-`word_data`, `string_data`, and `blob_data`. `new_context` is used for
-introducing a child-parent association of two contexts, while the
-latter 3 are used for notifying data events:
+There are 4 basic types of USDT probe points to which a BPF program
+can attach: `new_context`, `word_data`, `string_data`, and
+`blob_data`.
 
-- `new_context(context, parent)`: introduce a new context under a given parent
+`new_context` is used for asserting a parent-child relationship
+between two contexts, while the latter 3 are used for notifying data
+events:
+
+- `new_context(context, parent)`: indicate a context under a given parent
 - `word_data(context, key, value)`: indicate an event of a machine
   word
 - `string_data(context, key, value)`: indicate an event of a
   NUL-terminated string
 - `blob_data(context, key, value, value_size)`: indicate an event of a
   binary blob
+
+Additionally, there are 2 extended USDT probe points which combine the
+above:
+
+- `new_context_with_data(context, parent, array_ptr, array_size)`
+- `data(context, array_ptr, array_size)`
+
+Both probe points take a typed array of data events in the following
+structure:
+
+```c
+struct crypto_auditing_data {
+	char *key_ptr;
+	void *value_ptr;
+	unsigned long value_size;
+};
+```
+
+where the `value_size` field is set depending on the type of the
+value. If the value is a machine word, it is set to 0xfffffffe (= -2,
+in 2's complement representation). If the value is a NUL-terminated
+string, it is set to 0xffffffff (= -1). Otherwise, it is set to the
+actual size of the value.
+
+These probe points were introduced to reduce the number of context
+switches between a BPF program and the crypto-auditing agent. There
+is, however, one drawback: since reading the contents of the array is
+not an atomic operation, the memory may be unmapped. Therefore, to
+attach those probe points, the BPF program must be loaded as
+[sleepable] and using `bpf_copy_from_user` instead of
+`bpf_probe_read_user`.
 
 ### Drawbacks and alternatives
 
@@ -136,3 +172,4 @@ This approach has a couple of drawbacks:
 
 [kernel-tracepoints]: https://www.kernel.org/doc/html/latest/bpf/bpf_design_QA.html#q-are-tracepoints-part-of-the-stable-abi
 [protocol-version]: https://www.rfc-editor.org/rfc/rfc8446#appendix-B.3.1
+[sleepable]: https://lwn.net/Articles/825415/
