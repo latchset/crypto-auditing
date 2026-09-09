@@ -3,7 +3,7 @@
 
 use pest::Parser;
 use pest::iterators::Pair;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
 #[derive(Parser)]
@@ -115,7 +115,7 @@ pub struct Scope {
 #[derive(Debug, Default)]
 pub struct Schema {
     pub scopes: Vec<Scope>,
-    parents: HashMap<Name, Vec<Name>>,
+    parents: HashMap<Name, HashSet<Name>>,
 }
 
 fn parse_allowed_children(name: &str, pair: Pair<Rule>) -> Vec<Pattern> {
@@ -252,12 +252,12 @@ impl Schema {
     pub fn is_parent(&self, parent_name: &Name, name: &Name) -> bool {
         self.parents
             .get(name)
-            .map(|parents| parents.iter().any(|x| x == parent_name))
+            .map(|parents| parents.contains(parent_name))
             .unwrap_or(false)
     }
 
     fn extract_direct_parents(
-        parents: &mut HashMap<Name, Vec<Name>>,
+        parents: &mut HashMap<Name, HashSet<Name>>,
         scope: &Scope,
         parent: &ContextEvent,
     ) {
@@ -269,12 +269,15 @@ impl Schema {
             }
         }
         for child in children {
-            parents.insert(child, vec![Name::new(&scope.name, &parent.name)]);
+            parents
+                .entry(child)
+                .or_default()
+                .insert(Name::new(&scope.name, &parent.name));
         }
     }
 
     fn extract_allowed_children(
-        parents: &mut HashMap<Name, Vec<Name>>,
+        parents: &mut HashMap<Name, HashSet<Name>>,
         scope: &Scope,
         parent: &ContextEvent,
         roots: &HashMap<String, Vec<Name>>,
@@ -307,7 +310,7 @@ impl Schema {
             parents
                 .entry(child)
                 .or_default()
-                .push(Name::new(scope.name.as_str(), parent.name.as_str()));
+                .insert(Name::new(scope.name.as_str(), parent.name.as_str()));
         }
     }
 
