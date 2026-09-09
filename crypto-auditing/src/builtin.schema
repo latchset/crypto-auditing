@@ -58,10 +58,16 @@ scope tls {
       allowed_children pk::generate, pk::derive, pk::encapsulate, pk::decapsulate;
     }
 
-    /* A TLS handshake message (e.g., CertificateVerify in TLS 1.3) is digitally signed or verified */
-    context sign, verify {
+    /* A TLS handshake message (e.g., CertificateVerify in TLS 1.3) is digitally signed */
+    context sign {
       signature_algorithm: uint16;
-      allowed_children pk::sign, pk::verify;
+      allowed_children pk::sign;
+    }
+
+    /* A TLS handshake message (e.g., CertificateVerify in TLS 1.3) is verified */
+    context verify {
+      signature_algorithm: uint16;
+      allowed_children pk::verify;
     }
 
     /* A certificate chain presented during a TLS handshake is verified */
