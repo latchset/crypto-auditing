@@ -304,14 +304,10 @@ impl Schema {
             }
         }
         for child in children {
-            if let Some(v) = parents.get_mut(&child) {
-                v.push(child);
-            } else {
-                parents.insert(
-                    child,
-                    vec![Name::new(scope.name.as_str(), parent.name.as_str())],
-                );
-            }
+            parents
+                .entry(child)
+                .or_default()
+                .push(Name::new(scope.name.as_str(), parent.name.as_str()));
         }
     }
 
@@ -362,5 +358,6 @@ mod tests {
             &Name::new("pk", "encapsulate")
         ));
         assert!(!builtin.is_parent(&Name::new("tls", "sign"), &Name::new("pk", "encapsulate")));
+        assert!(!builtin.is_parent(&Name::new("pk", "verify"), &Name::new("pk", "verify")));
     }
 }
