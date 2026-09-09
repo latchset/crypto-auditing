@@ -18,7 +18,8 @@
 # error "no DTrace compatibile macros defined in <sys/sdt.h>"
 #endif
 
-/* Introduce a new context CONTEXT, derived from the parent context PARENT.
+/* Assert a parent-child relationship between two contexts, a child
+ * CONTEXT and its PARENT.
  */
 #define CRAU_NEW_CONTEXT(context, parent) \
 	DTRACE_PROBE2(crypto_auditing, new_context, context, parent)
@@ -83,15 +84,16 @@ struct crypto_auditing_data {
 			  sizeof(__crau_data) / sizeof(__crau_data[0]));     \
 	})
 
-/* Introduce a new context CONTEXT, derived from PARENT, with optional
- * events to be emitted.
+/* Assert a parent-child relationship between two contexts, a child
+ * CONTEXT and its PARENT, with optional data events to be emitted.
  */
 #define CRAU_NEW_CONTEXT_WITH_DATA(context, parent, array_ptr, array_size)     \
 	DTRACE_PROBE4(crypto_auditing, new_context_with_data, context, parent, \
 		      array_ptr, array_size)
 
-/* Introduce a new context CONTEXT, derived from PARENT, with optional
- * events to be emitted, through varargs.
+/* Assert a parent-child relationship between two contexts, a child
+ * CONTEXT and its PARENT, with optional data events to be emitted
+ * through variadic arguments.
  */
 #define CRAU_NEW_CONTEXT_WITH_DATAV(context, parent, ...)                    \
 	({                                                                   \

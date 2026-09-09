@@ -37,6 +37,9 @@ Since the crypto-auditing agent monitor multiple processes, event
 sequences may be interleaved with each other. Context IDs enable
 reconstructing interleaved events into same context sequences.
 
+In addition to context IDs, a valid context must contain a "name" data
+event as described in the event keys [registry](registry.md).
+
 ### Example: TLS client handshake
 
 A TLS handshake consists of several cryptographic operations, such as
