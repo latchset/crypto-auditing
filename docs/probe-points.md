@@ -77,8 +77,16 @@ CRYPTO_AUDITING_STRING_DATA(context, "name", "tls::handshake_client");
 CRYPTO_AUDITING_WORD_DATA(context, "tls::protocol_version", 0x0304);
 ```
 
-where `context` can be any object with the size of a machine word
-(a pointer or `long`, i.e., a 64-bit integer).
+where `context` can be any object with the size of a machine word (a
+pointer or `long`, i.e., a 64-bit integer on LP64 platforms), but must
+not be zero. The agent may ignore events if their contexts are
+zero.
+
+In library instrumentation, context objects are typically pointers to
+allocated objects. If allocation fails, the pointers will be
+NULL. Prohibiting all-zero contexts would help prevent this situation,
+without imposing an explicit NULL check on the library side. To
+represent a context without a parent, use a non-zero special value.
 
 #### Protocol between BPF programs and the agent
 

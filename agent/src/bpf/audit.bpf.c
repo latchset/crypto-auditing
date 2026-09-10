@@ -68,6 +68,18 @@ record_new_context (struct pt_regs *ctx, long context, long parent)
 {
   int err;
 
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
+
+  if (!parent)
+    {
+      DEBUG ("parent must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
+
   /* Tolerate changes in `struct bpf_stack_build_id` definition in the
      future with longer hash output. */
   unsigned char buf[sizeof(struct bpf_stack_build_id) + MAX_BUILD_ID_SIZE];
@@ -147,6 +159,12 @@ record_word_data (struct pt_regs *ctx, long context, const char *key_ptr,
 {
   int err;
 
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
+
   struct audit_word_data_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
 			 sizeof(struct audit_word_data_event_st),
@@ -184,6 +202,12 @@ record_string_data (struct pt_regs *ctx, long context, const char *key_ptr,
 		    const char *value_ptr)
 {
   int err;
+
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
 
   struct audit_blob_data_event_st *event =
     bpf_ringbuf_reserve (&ringbuf,
@@ -229,6 +253,12 @@ static __always_inline int
 record_blob_data (struct pt_regs *ctx, long context, const char *key_ptr)
 {
   int err;
+
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
 
   long value;
   err = bpf_usdt_arg (ctx, 3, &value);
@@ -305,6 +335,12 @@ record_blob_data_explicit (struct pt_regs *ctx, long context, const char *key_pt
 {
   int err;
 
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
+
   if (value_size > VALUE_SIZE)
     {
       DEBUG ("value size out of range: %lu\n", value_size);
@@ -362,6 +398,12 @@ record_data (struct pt_regs *ctx,
 {
   struct crypto_auditing_data events[MAX_EVENTS];
   int err;
+
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
 
   if (array_size > MAX_EVENTS)
     {
@@ -422,6 +464,18 @@ record_new_context_with_data (struct pt_regs *ctx, long context, long parent,
 			      unsigned long array_size)
 {
   int err;
+
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
+
+  if (!parent)
+    {
+      DEBUG ("parent must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
 
   err = record_new_context (ctx, context, parent);
   if (err < 0)
