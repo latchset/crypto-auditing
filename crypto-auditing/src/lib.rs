@@ -6,7 +6,6 @@ extern crate pest;
 extern crate pest_derive;
 
 mod context_tracker;
-pub mod event_broker;
 pub mod types;
 pub use context_tracker::ContextTracker;
 pub mod schema;

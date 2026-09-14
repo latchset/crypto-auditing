@@ -2,9 +2,7 @@
 members = [
     "agent",
     "agent/tests/agenttest",
-    "client",
     "crypto-auditing",
-    "event-broker",
     "log-parser",
     "monitor"
 ]
