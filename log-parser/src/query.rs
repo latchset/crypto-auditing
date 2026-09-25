@@ -37,8 +37,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(EnvFilter::from_default_env())
         .try_init()?;
 
-    Pager::new().setup();
-
     let log_file = std::fs::File::open(&config.log_file)
         .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
 
@@ -84,6 +82,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect();
     let content = serde_json::to_string_pretty(&root_contexts)?;
+
+    Pager::new().setup();
+
     if let Err(e) = io::stdout().write_all(content.as_bytes()) {
         if e.kind() != io::ErrorKind::BrokenPipe {
             return Err(Box::new(e));
