@@ -214,7 +214,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         caps::drop(None, CapSet::Permitted, Capability::CAP_SETGID)?;
         caps::drop(None, CapSet::Permitted, Capability::CAP_SETUID)?;
 
-        let fd = AsyncFd::with_interest(rb.epoll_fd(), Interest::READABLE)?;
+        let fd = unsafe { AsyncFd::register_with_interest(rb.epoll_fd(), Interest::READABLE)? };
         let mut writer = log_writer::LogWriter::from_config(&config).await?;
 
         loop {
