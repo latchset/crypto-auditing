@@ -20,6 +20,7 @@ typedef enum
   {
     AUDIT_EVENT_NEW_CONTEXT = 0,
     AUDIT_EVENT_DATA = 1,
+    AUDIT_EVENT_RELEASE_CONTEXT = 2,
   } audit_event_type_t;
 
 struct audit_event_header_st
@@ -41,6 +42,11 @@ struct audit_new_context_event_st
   unsigned char origin[MAX_BUILD_ID_SIZE];
   unsigned long int origin_size;
   char executable[MAX_EXECUTABLE_SIZE];
+};
+
+struct audit_release_context_event_st
+{
+  struct audit_event_header_st header;
 };
 
 struct audit_data_event_st
