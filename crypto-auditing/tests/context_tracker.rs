@@ -242,3 +242,77 @@ fn test_implicit_explicit_gaps() {
     assert_eq!(tracker.root_context_count(), 0);
     assert_eq!(tracker.context_count(), 0);
 }
+
+fn release_event() -> Event {
+    Event::ReleaseContext {}
+}
+
+// This results in the following tree:
+//
+// ROOT -> C1 ("a::a1")
+//   |
+//   +---> C1 ("a::a2")
+//   |
+//   +---> C2 ("b::b1")
+//
+// * C1 ("a::a1") is released before C1 is reused for "a::a2", thus
+//   C1 ("a::a2") becomes a top-level instead of a child of C1
+//   ("a::a1")
+// * C1 ("a::a2") is released before an explicit parent-child
+//   relationship between C1 and C2 is asserted, thus C2 ("b::b1")
+//   becomes a top-level
+// * the data event sent to the released C1 is discarded
+#[traced_test]
+#[test]
+fn test_release() {
+    let mut tracker = ContextTracker::new(None);
+    tracker.set_schema(Schema::parse(SCHEMA).expect("unable to parse schema"));
+    // implicit parent-child assertion: C1->C1
+    let g1 = EventGroupBuilder::new(C1)
+        .start(Duration::from_secs(1))
+        .end(Duration::from_secs(2))
+        .event(context_event(C1))
+        .event(name_event("a::a1"))
+        .event(release_event())
+        .build();
+    // implicit parent-child assertion: C1->C1, after release
+    let g2 = EventGroupBuilder::new(C1)
+        .start(Duration::from_secs(1))
+        .end(Duration::from_secs(2))
+        .event(context_event(C1))
+        .event(name_event("a::a2"))
+        .build();
+    let g3 = EventGroupBuilder::new(C1)
+        .start(Duration::from_secs(1))
+        .end(Duration::from_secs(2))
+        .event(release_event())
+        .event(Event::Data {
+            key: "a::k".to_string(),
+            value: EventData::Word(1),
+        })
+        .build();
+    // explicit parent-child assertion: C1->C2, after release
+    let g4 = EventGroupBuilder::new(C2)
+        .start(Duration::from_secs(1))
+        .end(Duration::from_secs(2))
+        .event(context_event(C1))
+        .event(name_event("b::b1"))
+        .build();
+
+    assert_eq!(tracker.handle_event_group(&g1), 1);
+    assert_eq!(tracker.context_count(), 0);
+    assert_eq!(tracker.handle_event_group(&g2), 1);
+    assert_eq!(tracker.handle_event_group(&g3), 0);
+    assert_eq!(tracker.handle_event_group(&g4), 1);
+
+    assert_eq!(tracker.root_context_count(), 3);
+    assert_eq!(tracker.context_count(), 1);
+
+    let contexts: Vec<_> = tracker.flush(None).into_iter().collect();
+    assert_eq!(contexts.len(), 3);
+    assert!(contexts.iter().all(|c| c.spans.is_empty()));
+    assert!(contexts.iter().all(|c| !c.events.contains_key("a::k")));
+
+    assert_eq!(tracker.root_context_count(), 0);
+    assert_eq!(tracker.context_count(), 0);
+}
