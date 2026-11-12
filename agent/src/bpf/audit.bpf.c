@@ -126,6 +126,34 @@ record_new_context (struct pt_regs *ctx, long context, long parent)
   return err;
 }
 
+static __always_inline int
+record_release_context (struct pt_regs *ctx, long context)
+{
+  if (!context)
+    {
+      DEBUG ("context must not be zero: %ld\n", -EINVAL);
+      return -EINVAL;
+    }
+
+  struct audit_release_context_event_st *event =
+    bpf_ringbuf_reserve (&ringbuf,
+			 sizeof(struct audit_release_context_event_st),
+			 0);
+  if (!event)
+    {
+      DEBUG ("unable to allocate ringbuf entry: %ld\n", -ENOMEM);
+      return -ENOMEM;
+    }
+
+  populate_event_header (&event->header,
+			 AUDIT_EVENT_RELEASE_CONTEXT,
+			 sizeof(*event),
+			 context);
+
+  bpf_ringbuf_submit (event, 0);
+  return 0;
+}
+
 static __always_inline long
 read_user (void *dst, u32 size, const void *unsafe_ptr)
 {
@@ -528,6 +556,13 @@ BPF_USDT(new_context_with_data, long context, long parent,
 {
   return record_new_context_with_data (ctx, context, parent, array_ptr,
 				       array_size);
+}
+
+SEC("usdt")
+int
+BPF_USDT(release_context, long context)
+{
+  return record_release_context (ctx, context);
 }
 
 char LICENSE[] SEC("license") = "GPL";

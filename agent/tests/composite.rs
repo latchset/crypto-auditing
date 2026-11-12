@@ -134,6 +134,16 @@ fn test_probe_composite() {
     .expect("unable to exercise probe points");
     assert_eq!(result, 1);
 
+    let result = with_ringbuffer(
+        &skel.maps.ringbuf,
+        || {
+            probe!(crypto_auditing, release_context, 4);
+        },
+        timeout,
+    )
+    .expect("unable to exercise probe points");
+    assert_eq!(result, 1);
+
     let log_file = std::fs::File::open(&log_path)
         .expect(&format!("unable to read file `{}`", log_path.display()));
 
@@ -141,7 +151,7 @@ fn test_probe_composite() {
         .into_iter::<EventGroup>()
         .collect();
     let groups = groups.expect("error deserializing");
-    assert_eq!(groups.len(), 6);
+    assert_eq!(groups.len(), 7);
     assert!(groups[0].is_metadata());
     assert_eq!(groups[1].events().len(), 1);
     assert!(matches!(groups[1].events()[0], Event::NewContext { .. }));
@@ -165,4 +175,9 @@ fn test_probe_composite() {
     }
     assert_eq!(groups[5].events().len(), 1);
     assert!(matches!(groups[5].events()[0], Event::NewContext { .. }));
+    assert_eq!(groups[6].events().len(), 1);
+    assert!(matches!(
+        groups[6].events()[0],
+        Event::ReleaseContext { .. },
+    ));
 }
