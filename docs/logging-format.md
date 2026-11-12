@@ -40,6 +40,11 @@ reconstructing interleaved events into same context sequences.
 In addition to context IDs, a valid context must contain a "name" data
 event as described in the event keys [registry](registry.md).
 
+Once a context is no longer in use, a "release_context" event may be
+emitted with the context ID. After that, the context ID may be reused
+for a different context, starting with a new "new_context" event; any
+other events with that context ID in between are ignored.
+
 ### Example: TLS client handshake
 
 A TLS handshake consists of several cryptographic operations, such as
@@ -243,7 +248,7 @@ EventGroup = {
   events: [+ Event]
 }
 
-Event = NewContext / Data
+Event = NewContext / Data / ReleaseContext
 
 ContextId = bstr .size 16
 
@@ -251,6 +256,10 @@ NewContext = {
   NewContext: {
     parent: ContextId
   }
+}
+
+ReleaseContext = {
+  ReleaseContext: {}
 }
 
 Data = {

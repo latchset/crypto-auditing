@@ -179,6 +179,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             links.push(link);
         }
+        if let Ok(link) = skel.progs.release_context.attach_usdt(
+            -1, // any process
+            library,
+            "crypto_auditing",
+            "release_context",
+        ) {
+            links.push(link);
+        }
     }
 
     start(async {

@@ -278,6 +278,20 @@ impl ContextTracker {
         Ok(true)
     }
 
+    // Retires all the contexts in the lookup table, associated with
+    // `id`, so that any subsequent events with the same `id` are not
+    // attached to them
+    fn release_context(&mut self, id: &ContextId) -> Result<bool, Box<dyn std::error::Error>> {
+        debug!("releasing context (id {:02x?})", &id[..]);
+        self.larval_contexts.remove(id);
+        self.parents.remove(id);
+        self.explicit_parents.remove(id);
+        self.implicit_contexts.remove(id);
+        self.all_contexts
+            .retain(|context| !matches!(context.upgrade(), Some(c) if c.borrow().id == *id));
+        Ok(false)
+    }
+
     // Returns `true` if a root context is created
     fn handle_event(
         &mut self,
@@ -344,6 +358,7 @@ impl ContextTracker {
                     Ok(false)
                 }
             }
+            Event::ReleaseContext {} => self.release_context(id),
         }
     }
 

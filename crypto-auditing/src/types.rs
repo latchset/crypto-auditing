@@ -122,6 +122,7 @@ pub enum Event {
         key: String,
         value: EventData,
     },
+    ReleaseContext {},
 }
 
 impl Event {
@@ -214,7 +215,7 @@ impl EventGroup {
     /// Removes events which do not match the given scopes
     pub fn events_filtered(&mut self, scopes: &[String]) {
         self.events.retain(|event| match event {
-            Event::NewContext { .. } => true,
+            Event::NewContext { .. } | Event::ReleaseContext { .. } => true,
             Event::Data { key, .. } => scopes
                 .iter()
                 .any(|scope| !key.contains("::") || key.starts_with(&format!("{}::", scope))),
@@ -298,6 +299,12 @@ impl EventGroup {
                     }
                     _ => unreachable!(),
                 }
+            },
+            audit_event_type_t::AUDIT_EVENT_RELEASE_CONTEXT => EventGroup {
+                context,
+                start: ktime,
+                end: ktime,
+                events: vec![Event::ReleaseContext {}],
             },
             _ => unreachable!(),
         };
