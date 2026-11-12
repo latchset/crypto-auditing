@@ -49,7 +49,7 @@ sysinfo = "0.39"
 tempfile = "3"
 thiserror = "1.0"
 time = "0.3"
-tokio = "1.23"
+tokio = "1.53.3"
 tokio-serde = { version = "0.8", features = ["cbor"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 tokio-util = { version = "0.7", features = ["codec"] }
