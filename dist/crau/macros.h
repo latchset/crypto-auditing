@@ -24,6 +24,12 @@
 #define CRAU_NEW_CONTEXT(context, parent) \
 	DTRACE_PROBE2(crypto_auditing, new_context, context, parent)
 
+/* Declare that CONTEXT is retired and its value may be reused for
+ * other purposes.
+ */
+#define CRAU_RELEASE_CONTEXT(context) \
+	DTRACE_PROBE1(crypto_auditing, release_context, context)
+
 /* Emit an event with KEY and VALUE. The key is a NUL-terminated
  * string, while the value is an integer in the size of a machine
  * word.
@@ -106,6 +112,7 @@ struct crypto_auditing_data {
 #else
 
 #define CRAU_NEW_CONTEXT(context, parent)
+#define CRAU_RELEASE_CONTEXT(context)
 #define CRAU_WORD_DATA(context, key_ptr, value_ptr)
 #define CRAU_STRING_DATA(context, key_ptr, value_ptr)
 #define CRAU_BLOB_DATA(context, key_ptr, value_ptr, value_size)

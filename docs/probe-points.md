@@ -43,6 +43,12 @@ probes as follows:
 # define CRYPTO_AUDITING_NEW_CONTEXT(context, parent)				\
 	DTRACE_PROBE2(crypto_auditing, new_context, context, parent)
 
+/* Declare that CONTEXT is retired and its value may be reused for
+ * other purposes.
+ */
+# define CRYPTO_AUDITING_RELEASE_CONTEXT(context)				\
+	DTRACE_PROBE1(crypto_auditing, release_context, context)
+
 /* Assert an event with KEY and VALUE. The key is treated as a
  * NUL-terminated string, while the value is in the size of machine
  * word
@@ -75,6 +81,9 @@ CRYPTO_AUDITING_STRING_DATA(context, "name", "tls::handshake_client");
 
 /* Indicate that TLS 1.3 is selected */
 CRYPTO_AUDITING_WORD_DATA(context, "tls::protocol_version", 0x0304);
+
+/* The context object is about to be freed */
+CRYPTO_AUDITING_RELEASE_CONTEXT(context);
 ```
 
 where `context` can be any object with the size of a machine word (a
@@ -90,21 +99,40 @@ represent a context without a parent, use a non-zero special value.
 
 #### Protocol between BPF programs and the agent
 
-There are 4 basic types of USDT probe points to which a BPF program
-can attach: `new_context`, `word_data`, `string_data`, and
-`blob_data`.
+There are 5 basic types of USDT probe points to which a BPF program
+can attach: `new_context`, `release_context`, `word_data`,
+`string_data`, and `blob_data`.
 
 `new_context` is used for asserting a parent-child relationship
-between two contexts, while the latter 3 are used for notifying data
-events:
+between two contexts, `release_context` is used for retiring a
+context, while the latter 3 are used for notifying data events:
 
 - `new_context(context, parent)`: indicate a context under a given parent
+- `release_context(context)`: indicate that a context is retired
 - `word_data(context, key, value)`: indicate an event of a machine
   word
 - `string_data(context, key, value)`: indicate an event of a
   NUL-terminated string
 - `blob_data(context, key, value, value_size)`: indicate an event of a
   binary blob
+
+Since context objects are typically pointers to allocated objects,
+the same value may be reused for an unrelated context once the
+original object is freed. `release_context` allows the library to
+voluntarily declare that a context is no longer in use, so that any
+subsequent events with the same value are not associated with the
+retired context:
+
+- data events sent to a released context are ignored until it is
+  re-created with `new_context`
+- a released context can no longer become a parent of other contexts,
+  either implicitly or explicitly
+- events already associated with a released context, as well as its
+  child contexts, are preserved
+
+Emitting `release_context` is optional; if it is not emitted, the
+consumer falls back to heuristics, such as the schema-based parent
+inference, to disambiguate reused values.
 
 Additionally, there are 2 extended USDT probe points which combine the
 above:
