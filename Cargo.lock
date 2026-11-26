@@ -415,6 +415,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "similar-asserts",
+ "tempfile",
  "toml",
  "tracing-subscriber",
 ]

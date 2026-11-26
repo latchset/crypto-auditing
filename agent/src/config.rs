@@ -2,7 +2,9 @@
 // Copyright (C) 2022-2023 The crypto-auditing developers.
 
 use anyhow::{Context as _, Result, anyhow};
-use clap::{ArgAction, ArgMatches, ValueEnum, arg, command, parser::ValueSource, value_parser};
+use clap::{
+    ArgAction, ArgMatches, Command, ValueEnum, arg, command, parser::ValueSource, value_parser,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -67,70 +69,75 @@ fn parse_duration(arg: &str) -> Result<Duration, std::num::ParseIntError> {
     Ok(Duration::from_millis(milliseconds))
 }
 
+fn command() -> Command {
+    command!()
+        .arg(
+            arg!(
+                -c --config <FILE> "Path to configuration file"
+            )
+            .required(false)
+            .value_parser(value_parser!(PathBuf)),
+        )
+        .arg(
+            arg!(
+                --library <FILE> "Path to library that defines probes"
+            )
+            .required(false)
+            .value_parser(value_parser!(PathBuf))
+            .action(ArgAction::Append),
+        )
+        .arg(
+            arg!(
+                --"log-file" <FILE> "Path to output log file"
+            )
+            .required(false)
+            .value_parser(value_parser!(PathBuf))
+            .default_value("audit.cborseq"),
+        )
+        .arg(
+            arg!(
+                --user <USER> "User to run the program in USER:GROUP form"
+            )
+            .required(false)
+            .value_parser(parse_user),
+        )
+        .arg(
+            arg!(
+                --format <FORMAT> "Output format to use"
+            )
+            .required(false)
+            .value_parser(value_parser!(Format)),
+        )
+        .arg(
+            arg!(
+                --"coalesce-window" <WINDOW> "Event coalescing window"
+            )
+            .required(false)
+            .value_parser(parse_duration),
+        )
+        .arg(
+            arg!(
+                --"max-events" <NUMBER> "Maximum number of events to be written to a file"
+            )
+            .required(false)
+            .value_parser(value_parser!(usize)),
+        )
+        .arg(
+            arg!(
+                --"trace-file" <FILE> "Path to debug trace file"
+            )
+            .required(false)
+            .value_parser(value_parser!(PathBuf)),
+        )
+}
+
 impl Config {
     pub fn new() -> Result<Self> {
-        let mut config = Config::default();
+        Self::from_matches(&command().get_matches())
+    }
 
-        let matches = command!()
-            .arg(
-                arg!(
-                    -c --config <FILE> "Path to configuration file"
-                )
-                .required(false)
-                .value_parser(value_parser!(PathBuf)),
-            )
-            .arg(
-                arg!(
-                    --library <FILE> "Path to library that defines probes"
-                )
-                .required(false)
-                .value_parser(value_parser!(PathBuf))
-                .action(ArgAction::Append),
-            )
-            .arg(
-                arg!(
-                    --"log-file" <FILE> "Path to output log file"
-                )
-                .required(false)
-                .value_parser(value_parser!(PathBuf))
-                .default_value("audit.cborseq"),
-            )
-            .arg(
-                arg!(
-                    --user <USER> "User to run the program in USER:GROUP form"
-                )
-                .required(false)
-                .value_parser(parse_user),
-            )
-            .arg(
-                arg!(
-                    --format <FORMAT> "Output format to use"
-                )
-                .required(false)
-                .value_parser(value_parser!(Format)),
-            )
-            .arg(
-                arg!(
-                    --"coalesce-window" <WINDOW> "Event coalescing window"
-                )
-                .required(false)
-                .value_parser(parse_duration),
-            )
-            .arg(
-                arg!(
-                    --"max-events" <NUMBER> "Maximum number of events to be written to a file"
-                )
-                .required(false)
-                .value_parser(value_parser!(usize)),
-            )
-            .arg(
-                arg!(
-                    --"trace-file" <FILE> "Path to debug trace file"
-                )
-                .required(false)
-                .value_parser(value_parser!(PathBuf)),
-            )
-            .get_matches();
+    fn from_matches(matches: &ArgMatches) -> Result<Self> {
+        let mut config = Config::default();
 
         if let Some(config_file) = matches.get_one::<PathBuf>("config") {
             config.merge_config_file(config_file)?;
@@ -138,7 +145,7 @@ impl Config {
             config.merge_config_file(CONFIG)?;
         }
 
-        config.merge_arg_matches(&matches)?;
+        config.merge_arg_matches(matches)?;
 
         if config.library.is_empty() {
             return Err(anyhow!("library must be specified"));
@@ -264,4 +271,193 @@ fn usize_from_value(value: &Value) -> Result<usize> {
         .as_integer()
         .ok_or_else(|| anyhow!("value must be integer"))
         .map(|v| v as usize)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write as _;
+    use tempfile::NamedTempFile;
+
+    fn config_file(contents: &str) -> NamedTempFile {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(contents.as_bytes()).unwrap();
+        file
+    }
+
+    fn parse_args(args: &[&str]) -> Result<Config> {
+        let matches = command().try_get_matches_from(["crau-agent"].iter().chain(args))?;
+        Config::from_matches(&matches)
+    }
+
+    fn parse(file: &NamedTempFile, args: &[&str]) -> Result<Config> {
+        let path = file.path().to_str().unwrap();
+        parse_args(&[&["--config", path], args].concat())
+    }
+
+    #[test]
+    fn defaults() {
+        let file = config_file("");
+        let config = parse(&file, &["--library", "/usr/lib64/libssl.so.3"]).unwrap();
+        assert_eq!(
+            config.library,
+            vec![PathBuf::from("/usr/lib64/libssl.so.3")]
+        );
+        assert_eq!(config.log_file, PathBuf::from(LOG));
+        assert_eq!(config.user, None);
+        assert_eq!(config.format, Format::Normal);
+        assert_eq!(config.coalesce_window, None);
+        assert_eq!(config.max_events, None);
+        assert_eq!(config.trace_file, None);
+    }
+
+    #[test]
+    fn library_required() {
+        let file = config_file("");
+        assert!(parse(&file, &[]).is_err());
+    }
+
+    #[test]
+    fn from_config_file() {
+        let file = config_file(
+            r#"
+library = ["/usr/lib64/libgnutls.so.30", "/usr/lib64/libssl.so.3"]
+log_file = "/tmp/audit.cborseq"
+user = "crypto-auditing:crypto-auditing"
+format = "packed"
+coalesce_window = 100
+max_events = 1000000
+"#,
+        );
+        let config = parse(&file, &[]).unwrap();
+        assert_eq!(
+            config.library,
+            vec![
+                PathBuf::from("/usr/lib64/libgnutls.so.30"),
+                PathBuf::from("/usr/lib64/libssl.so.3"),
+            ]
+        );
+        assert_eq!(config.log_file, PathBuf::from("/tmp/audit.cborseq"));
+        assert_eq!(
+            config.user,
+            Some(("crypto-auditing".to_string(), "crypto-auditing".to_string()))
+        );
+        assert_eq!(config.format, Format::Packed);
+        assert_eq!(config.coalesce_window, Some(Duration::from_millis(100)));
+        assert_eq!(config.max_events, Some(1000000));
+    }
+
+    #[test]
+    fn from_command_line() {
+        let file = config_file("");
+        let config = parse(
+            &file,
+            &[
+                "--library",
+                "/usr/lib64/libgnutls.so.30",
+                "--library",
+                "/usr/lib64/libssl.so.3",
+                "--log-file",
+                "/tmp/audit.cborseq",
+                "--user",
+                "user:group",
+                "--format",
+                "minimal",
+                "--coalesce-window",
+                "200",
+                "--max-events",
+                "10",
+                "--trace-file",
+                "/tmp/trace",
+            ],
+        )
+        .unwrap();
+        assert_eq!(
+            config.library,
+            vec![
+                PathBuf::from("/usr/lib64/libgnutls.so.30"),
+                PathBuf::from("/usr/lib64/libssl.so.3"),
+            ]
+        );
+        assert_eq!(config.log_file, PathBuf::from("/tmp/audit.cborseq"));
+        assert_eq!(config.user, Some(("user".to_string(), "group".to_string())));
+        assert_eq!(config.format, Format::Minimal);
+        assert_eq!(config.coalesce_window, Some(Duration::from_millis(200)));
+        assert_eq!(config.max_events, Some(10));
+        assert_eq!(config.trace_file, Some(PathBuf::from("/tmp/trace")));
+    }
+
+    #[test]
+    fn command_line_overrides_config_file() {
+        let file = config_file(
+            r#"
+library = ["/usr/lib64/libgnutls.so.30", "/usr/lib64/libssl.so.3"]
+log_file = "/tmp/audit.cborseq"
+user = "crypto-auditing:crypto-auditing"
+format = "packed"
+coalesce_window = 100
+max_events = 1000000
+"#,
+        );
+        let config = parse(
+            &file,
+            &[
+                "--library",
+                "/usr/lib64/libnss3.so",
+                "--user",
+                "user:group",
+                "--coalesce-window",
+                "200",
+            ],
+        )
+        .unwrap();
+        // Overridden by the command-line; list values are replaced, not appended
+        assert_eq!(config.library, vec![PathBuf::from("/usr/lib64/libnss3.so")]);
+        assert_eq!(config.user, Some(("user".to_string(), "group".to_string())));
+        assert_eq!(config.coalesce_window, Some(Duration::from_millis(200)));
+        // Unspecified on the command-line; kept from the config file
+        assert_eq!(config.log_file, PathBuf::from("/tmp/audit.cborseq"));
+        assert_eq!(config.format, Format::Packed);
+        assert_eq!(config.max_events, Some(1000000));
+    }
+
+    #[test]
+    fn invalid_user() {
+        let file = config_file("");
+        assert!(parse(&file, &["--library", "/lib", "--user", "user"]).is_err());
+
+        let file = config_file(
+            r#"
+library = ["/lib"]
+user = "user"
+"#,
+        );
+        assert!(parse(&file, &[]).is_err());
+    }
+
+    #[test]
+    fn invalid_format() {
+        let file = config_file("");
+        assert!(parse(&file, &["--library", "/lib", "--format", "bogus"]).is_err());
+
+        let file = config_file(
+            r#"
+library = ["/lib"]
+format = "bogus"
+"#,
+        );
+        assert!(parse(&file, &[]).is_err());
+    }
+
+    #[test]
+    fn missing_config_file() {
+        assert!(parse_args(&["--config", "/nonexistent/agent.conf", "--library", "/lib"]).is_err());
+    }
+
+    #[test]
+    fn fixture_config_file() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/fixtures/conf/agent.conf");
+        let config = parse_args(&["--config", path, "--library", "/lib"]).unwrap();
+        assert_eq!(config.log_file, PathBuf::from(LOG));
+    }
 }
