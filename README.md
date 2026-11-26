@@ -37,7 +37,7 @@ More detailed design documents are available from the following links:
 1. Install the latest Rust toolchain
 2. Install the dependencies (note that libbpf 1.1.1 or later is required)
 ```console
-$ sudo dnf install bpftool make libbpf-devel llvm-devel rustfmt
+$ sudo dnf install bpftool make libbpf-devel clang-devel rustfmt
 ```
 3. Build the programs with `make`
 ```console
