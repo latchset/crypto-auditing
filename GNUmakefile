@@ -59,8 +59,14 @@ check: all
 	cargo test --target-dir="${TARGETDIR}"
 
 .PHONY: update-fixtures
-update-fixtures: all
-	@echo "Updating log-parser/fixtures/logs/since-until/*.json from audit.cborseq..."
+update-fixtures:
+	cargo build --target-dir="${TARGETDIR}" ${CARGO_ARGS} \
+		-p crypto-auditing-log-parser -p crypto-auditing-log-parser-dev
+	@echo "Updating log-parser/fixtures/logs/*/*.json from audit.cborseq..."
+	${TARGETDIR}/${PROFILE}/crau-query \
+		-c log-parser/fixtures/conf/query.conf \
+		--log-file log-parser/fixtures/logs/implicit-context/audit.cborseq \
+		> log-parser/fixtures/logs/implicit-context/audit.json
 	${TARGETDIR}/${PROFILE}/crau-query \
 		-c log-parser/fixtures/conf/query.conf \
 		--log-file log-parser/fixtures/logs/since-until/audit.cborseq \
