@@ -371,6 +371,7 @@ dependencies = [
  "caps",
  "clap",
  "crypto-auditing",
+ "crypto-auditing-agent-dev",
  "figment",
  "futures",
  "libbpf-cargo",
@@ -389,6 +390,13 @@ dependencies = [
  "tokio-uring",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "crypto-auditing-agent-dev"
+version = "0.3.2"
+dependencies = [
+ "crypto-auditing",
 ]
 
 [[package]]
@@ -422,6 +430,7 @@ dependencies = [
  "anyhow",
  "clap",
  "crypto-auditing",
+ "crypto-auditing-log-parser-dev",
  "figment",
  "hex",
  "jiff",
@@ -434,6 +443,13 @@ dependencies = [
  "similar-asserts",
  "tempfile",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "crypto-auditing-log-parser-dev"
+version = "0.3.2"
+dependencies = [
+ "crypto-auditing",
 ]
 
 [[package]]

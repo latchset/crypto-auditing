@@ -29,6 +29,7 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [dev-dependencies]
 tempfile.workspace = true
+crypto-auditing-log-parser-dev = { path = "dev" }
 similar-asserts.workspace = true
 
 [[bin]]
