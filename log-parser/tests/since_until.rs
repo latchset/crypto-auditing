@@ -3,7 +3,6 @@
 
 use anyhow::{Result, bail};
 use similar_asserts::assert_eq;
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -15,22 +14,8 @@ fn fixture_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-fn target_dir() -> PathBuf {
-    env::current_exe()
-        .ok()
-        .map(|mut path| {
-            path.pop();
-            if path.ends_with("deps") {
-                path.pop();
-            }
-            path
-        })
-        .unwrap()
-}
-
 fn run_query(since: Option<String>, until: Option<String>) -> Result<Vec<u8>> {
-    let query_path = target_dir().join("crau-query");
-    let mut command = Command::new(&query_path);
+    let mut command = Command::new(env!("CARGO_BIN_EXE_crau-query"));
 
     let mut command = command
         .arg("-c")
