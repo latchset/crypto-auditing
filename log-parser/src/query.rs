@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log_file = std::fs::File::open(&config.log_file)
         .with_context(|| format!("unable to read file `{}`", config.log_file.display()))?;
 
-    let mut groups = Deserializer::from_reader(&log_file)
+    let mut groups = Deserializer::from_reader(io::BufReader::new(log_file))
         .into_iter::<EventGroup>()
         .peekable();
 
