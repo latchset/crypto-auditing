@@ -6,7 +6,7 @@ use crate::{
     types::{Context, ContextId, Event, EventGroup},
 };
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::{Bound, RangeBounds};
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -120,33 +120,30 @@ impl ContextTracker {
                 false
             }
         });
-        let contains = |roots: &Vec<Rc<RefCell<Context>>>, context: &Weak<RefCell<Context>>| {
-            context
-                .upgrade()
-                .filter(|context| {
-                    roots
-                        .iter()
-                        .any(|c| Rc::ptr_eq(c, &context) || c.borrow().contains(&context))
-                })
-                .is_some()
-        };
-        self.all_contexts
-            .retain(|context| !contains(&removed, context));
+        // Collect the removed contexts and their descendants, so the
+        // lookup tables can be pruned without traversing the trees
+        // for each entry
+        let mut removed_ptrs = HashSet::new();
+        let mut stack = removed;
+        while let Some(context) = stack.pop() {
+            removed_ptrs.insert(Rc::as_ptr(&context));
+            stack.extend(context.borrow().spans.iter().cloned());
+        }
+        let contains = |context: &Weak<RefCell<Context>>| removed_ptrs.contains(&context.as_ptr());
+        self.all_contexts.retain(|context| !contains(context));
         self.implicit_contexts
             .values_mut()
-            .for_each(|contexts| contexts.retain(|context| !contains(&removed, context)));
+            .for_each(|contexts| contexts.retain(|context| !contains(context)));
         self.implicit_contexts
             .retain(|_id, contexts| !contexts.is_empty());
-        self.explicit_parents.retain(|id, _parent_id| {
-            self.all_contexts
-                .iter()
-                .any(|c| c.upgrade().filter(|c| c.borrow().id == *id).is_some())
-        });
-        self.parents.retain(|id, _parent_id| {
-            self.all_contexts
-                .iter()
-                .any(|c| c.upgrade().filter(|c| c.borrow().id == *id).is_some())
-        });
+        let ids: HashSet<ContextId> = self
+            .all_contexts
+            .iter()
+            .filter_map(|c| c.upgrade().map(|c| c.borrow().id))
+            .collect();
+        self.explicit_parents
+            .retain(|id, _parent_id| ids.contains(id));
+        self.parents.retain(|id, _parent_id| ids.contains(id));
 
         debug!(root_contexts = %self.root_contexts.len(),
                larval_contexts = %self.larval_contexts.len(),
