@@ -156,6 +156,12 @@ fn format_context_id(context: i64, pid_tgid: u64) -> ContextId {
 impl EventGroup {
     /// Returns a new `EventGroup` with metadata events
     pub fn metadata() -> Self {
+        Self::metadata_with_boot_time(System::boot_time() as i64)
+    }
+
+    /// Returns a new `EventGroup` with metadata events, using
+    /// `boot_time` (in seconds since the epoch) as the system boot time
+    pub fn metadata_with_boot_time(boot_time: i64) -> Self {
         let events = vec![
             Event::Data {
                 key: "version".to_string(),
@@ -163,7 +169,7 @@ impl EventGroup {
             },
             Event::Data {
                 key: "boot_time".to_string(),
-                value: EventData::Word(System::boot_time() as i64),
+                value: EventData::Word(boot_time),
             },
         ];
 
