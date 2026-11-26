@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2022-2025 The crypto-auditing developers.
 
-use anyhow::{Context as _, Result, anyhow};
-use clap::{ArgAction, ArgMatches, Command, arg, command, parser::ValueSource, value_parser};
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use anyhow::Result;
+use clap::Parser;
+use figment::{
+    Figment,
+    providers::{Format as _, Serialized, Toml},
+};
+use serde::{Deserialize, Serialize};
+use serde_with::{DurationMilliSeconds, serde_as};
+use std::path::PathBuf;
 use std::time::Duration;
-use toml::{Table, Value};
 
 const CONFIG: &str = "/etc/crypto-auditing/monitor.conf";
 const LOG: &str = "/var/log/crypto-auditing/audit.cborseq";
 
-#[derive(Debug)]
+#[serde_as]
+#[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Config {
     /// Path to output log file
     pub log_file: PathBuf,
@@ -21,6 +26,7 @@ pub struct Config {
     pub scope: Vec<String>,
 
     /// Event window
+    #[serde_as(as = "DurationMilliSeconds<u64>")]
     pub event_window: Duration,
 }
 
@@ -34,134 +40,47 @@ impl Default for Config {
     }
 }
 
-fn parse_duration(arg: &str) -> Result<Duration, std::num::ParseIntError> {
-    let milliseconds = arg.parse()?;
-    Ok(Duration::from_millis(milliseconds))
-}
+// Command-line options, overriding the ones in the configuration file
+// with the same name.  Unspecified options are not serialized so they
+// do not override anything.
+#[derive(Parser, Serialize)]
+#[command(author, version, about)]
+struct Cli {
+    /// Path to configuration file
+    #[arg(short, long, value_name = "FILE")]
+    #[serde(skip)]
+    config: Option<PathBuf>,
 
-fn command() -> Command {
-    command!()
-        .arg(
-            arg!(
-                -c --config <FILE> "Path to configuration file"
-            )
-            .required(false)
-            .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(
-            arg!(
-                --"log-file" <FILE> "Path to output log file"
-            )
-            .required(false)
-            .value_parser(value_parser!(PathBuf))
-            .default_value("audit.cborseq"),
-        )
-        .arg(
-            arg!(
-                --scope <SCOPE> "Scope to restrict matches"
-            )
-            .required(false)
-            .value_parser(value_parser!(String))
-            .action(ArgAction::Append),
-        )
-        .arg(
-            arg!(
-                --"event-window" <WINDOW> "Event window"
-            )
-            .required(false)
-            .value_parser(parse_duration),
-        )
+    /// Path to output log file
+    #[arg(long, value_name = "FILE")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    log_file: Option<PathBuf>,
+
+    /// Scope to restrict matches
+    #[arg(long, value_name = "SCOPE")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    scope: Vec<String>,
+
+    /// Event window in milliseconds
+    #[arg(long, value_name = "WINDOW")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    event_window: Option<u64>,
 }
 
 impl Config {
     pub fn new() -> Result<Self> {
-        Self::from_matches(&command().get_matches())
+        Self::from_cli(Cli::parse())
     }
 
-    fn from_matches(matches: &ArgMatches) -> Result<Self> {
-        let mut config = Config::default();
-
-        if let Some(config_file) = matches.get_one::<PathBuf>("config") {
-            config.merge_config_file(config_file)?;
-        } else if Path::new(CONFIG).exists() {
-            config.merge_config_file(CONFIG)?;
-        }
-
-        config.merge_arg_matches(matches)?;
-
-        Ok(config)
+    fn from_cli(cli: Cli) -> Result<Self> {
+        let file = match &cli.config {
+            Some(path) => Toml::file_exact(path),
+            None => Toml::file(CONFIG),
+        };
+        Ok(Figment::from(file)
+            .merge(Serialized::defaults(&cli))
+            .extract()?)
     }
-
-    fn merge_config_file(&mut self, file: impl AsRef<Path>) -> Result<()> {
-        let s = fs::read_to_string(file.as_ref())
-            .with_context(|| format!("unable to read config file `{}`", file.as_ref().display()))?;
-        let config = Table::from_str(&s).with_context(|| {
-            format!("unable to parse config file `{}`", file.as_ref().display())
-        })?;
-
-        if let Some(value) = config.get("log_file") {
-            self.log_file = pathbuf_from_value(value)?;
-        }
-
-        if let Some(value) = config.get("scope") {
-            self.scope = string_array_from_value(value)?;
-        }
-
-        if let Some(value) = config.get("event_window") {
-            self.event_window = duration_millis_from_value(value)?;
-        }
-
-        Ok(())
-    }
-
-    fn merge_arg_matches(&mut self, matches: &ArgMatches) -> Result<()> {
-        if let Some(ValueSource::CommandLine) = matches.value_source("log-file") {
-            self.log_file = matches.try_get_one::<PathBuf>("log-file")?.unwrap().clone();
-        }
-
-        if let Some(ValueSource::CommandLine) = matches.value_source("event-window") {
-            self.event_window = *matches.try_get_one::<Duration>("event-window")?.unwrap();
-        }
-
-        if let Some(ValueSource::CommandLine) = matches.value_source("scope") {
-            self.scope = matches.try_get_many("scope")?.unwrap().cloned().collect();
-        }
-
-        Ok(())
-    }
-}
-
-fn string_array_from_value(value: &Value) -> Result<Vec<String>> {
-    value
-        .as_array()
-        .ok_or_else(|| anyhow!("value must be array"))
-        .and_then(|array| {
-            array
-                .iter()
-                .map(string_from_value)
-                .collect::<Result<Vec<String>>>()
-        })
-}
-
-fn string_from_value(value: &Value) -> Result<String> {
-    value
-        .as_str()
-        .ok_or_else(|| anyhow!("value must be string"))
-        .map(|v| v.to_string())
-}
-
-fn pathbuf_from_value(value: &Value) -> Result<PathBuf> {
-    value
-        .as_str()
-        .ok_or_else(|| anyhow!("value must be string"))
-        .map(PathBuf::from)
-}
-
-fn duration_millis_from_value(value: &Value) -> Result<Duration> {
-    value
-        .as_integer()
-        .ok_or_else(|| anyhow!("value must be duration in milliseconds"))
-        .map(|v| Duration::from_millis(v as u64))
 }
 
 #[cfg(test)]
@@ -177,8 +96,8 @@ mod tests {
     }
 
     fn parse_args(args: &[&str]) -> Result<Config> {
-        let matches = command().try_get_matches_from(["crau-monitor"].iter().chain(args))?;
-        Config::from_matches(&matches)
+        let cli = Cli::try_parse_from(["crau-monitor"].iter().chain(args))?;
+        Config::from_cli(cli)
     }
 
     fn parse(file: &NamedTempFile, args: &[&str]) -> Result<Config> {
