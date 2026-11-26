@@ -14,7 +14,11 @@ fn fixture_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-fn run_query(since: Option<String>, until: Option<String>) -> Result<Vec<u8>> {
+fn run_query(
+    since: Option<String>,
+    until: Option<String>,
+    event_window: Option<u64>,
+) -> Result<Vec<u8>> {
     let mut command = Command::new(env!("CARGO_BIN_EXE_crau-query"));
 
     let mut command = command
@@ -38,6 +42,10 @@ fn run_query(since: Option<String>, until: Option<String>) -> Result<Vec<u8>> {
         command = command.arg("--until").arg(&until)
     }
 
+    if let Some(event_window) = event_window {
+        command = command.arg("--event-window").arg(event_window.to_string())
+    }
+
     let output = command.output()?;
     if !output.status.success() {
         match output.status.code() {
@@ -51,7 +59,7 @@ fn run_query(since: Option<String>, until: Option<String>) -> Result<Vec<u8>> {
 
 #[test]
 fn test_since_until() {
-    let output = run_query(None, None).expect("crau-query should run");
+    let output = run_query(None, None, None).expect("crau-query should run");
     let expected = fs::read(
         fixture_dir()
             .join("logs")
@@ -63,8 +71,8 @@ fn test_since_until() {
     let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
 
-    let output =
-        run_query(Some(format!("{START_TIME} + 1 mins")), None).expect("crau-query should run");
+    let output = run_query(Some(format!("{START_TIME} + 1 mins")), None, None)
+        .expect("crau-query should run");
     let expected = fs::read(
         fixture_dir()
             .join("logs")
@@ -79,6 +87,7 @@ fn test_since_until() {
     let output = run_query(
         Some(format!("{START_TIME} + 1 mins")),
         Some(format!("{START_TIME} + 2 mins")),
+        None,
     )
     .expect("crau-query should run");
     let expected = fs::read(
@@ -92,8 +101,8 @@ fn test_since_until() {
     let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
 
-    let output =
-        run_query(None, Some(format!("{START_TIME} + 2 mins"))).expect("crau-query should run");
+    let output = run_query(None, Some(format!("{START_TIME} + 2 mins")), None)
+        .expect("crau-query should run");
     let expected = fs::read(
         fixture_dir()
             .join("logs")
@@ -104,4 +113,25 @@ fn test_since_until() {
     let output = String::from_utf8(output).expect("should be in valid UTF-8");
     let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
     assert_eq!(output, expected);
+}
+
+#[test]
+fn test_event_window() {
+    let expected = fs::read(
+        fixture_dir()
+            .join("logs")
+            .join("since-until")
+            .join("none.json"),
+    )
+    .expect("should read since-until/none.json");
+    let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
+
+    // The handshakes are a minute apart from each other, so the
+    // output should be the same whether they are flushed one by one
+    // or all at once
+    for event_window in [100, 10_000, 3_600_000] {
+        let output = run_query(None, None, Some(event_window)).expect("crau-query should run");
+        let output = String::from_utf8(output).expect("should be in valid UTF-8");
+        assert_eq!(output, expected, "event window {event_window}");
+    }
 }

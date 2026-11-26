@@ -10,11 +10,14 @@ use figment::{
 use jiff::Zoned;
 use parse_datetime::parse_datetime;
 use serde::{Deserialize, Deserializer, Serialize, de};
+use serde_with::{DurationMilliSeconds, serde_as};
 use std::path::PathBuf;
+use std::time::Duration;
 
 const CONFIG: &str = "/etc/crypto-auditing/query.conf";
 const LOG: &str = "/var/log/crypto-auditing/audit.cborseq";
 
+#[serde_as]
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -29,6 +32,9 @@ pub struct Config {
     /// The latest timestamp to match events
     #[serde(deserialize_with = "deserialize_zoned")]
     pub until: Option<Zoned>,
+    /// Event window, measured in the timestamps recorded in the log
+    #[serde_as(as = "DurationMilliSeconds<u64>")]
+    pub event_window: Duration,
 }
 
 impl Default for Config {
@@ -38,6 +44,7 @@ impl Default for Config {
             boot_time: None,
             since: None,
             until: None,
+            event_window: Duration::from_secs(10),
         }
     }
 }
@@ -72,6 +79,11 @@ struct Cli {
     #[arg(long, value_name = "TIME")]
     #[serde(skip_serializing_if = "Option::is_none")]
     until: Option<String>,
+
+    /// Event window in milliseconds
+    #[arg(long, value_name = "WINDOW")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    event_window: Option<u64>,
 }
 
 fn deserialize_zoned<'de, D: Deserializer<'de>>(
@@ -142,6 +154,7 @@ mod tests {
         assert_eq!(config.boot_time, None);
         assert!(config.since.is_none());
         assert!(config.until.is_none());
+        assert_eq!(config.event_window, Duration::from_secs(10));
     }
 
     #[test]
@@ -151,6 +164,7 @@ mod tests {
 log_file = "/tmp/audit.cborseq"
 since = "2025-01-01T00:00:00Z"
 until = "2025-01-02T00:00:00Z"
+event_window = 5000
 "#,
         );
         let config = parse(&file, &[]).unwrap();
@@ -163,6 +177,7 @@ until = "2025-01-02T00:00:00Z"
             timestamp(&config.until),
             Some("2025-01-02T00:00:00Z".parse().unwrap())
         );
+        assert_eq!(config.event_window, Duration::from_millis(5000));
     }
 
     #[test]
@@ -179,6 +194,8 @@ until = "2025-01-02T00:00:00Z"
                 "2025-01-01T00:00:00Z",
                 "--until",
                 "2025-01-02T00:00:00Z",
+                "--event-window",
+                "100",
             ],
         )
         .unwrap();
@@ -192,6 +209,7 @@ until = "2025-01-02T00:00:00Z"
             timestamp(&config.until),
             Some("2025-01-02T00:00:00Z".parse().unwrap())
         );
+        assert_eq!(config.event_window, Duration::from_millis(100));
     }
 
     #[test]
