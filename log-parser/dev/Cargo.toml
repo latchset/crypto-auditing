@@ -1,0 +1,18 @@
+# A development-only package for generating crypto-auditing-log-parser test fixtures.
+
+[package]
+name = "crypto-auditing-log-parser-dev"
+description = "Test fixture generator for crypto-auditing-log-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[lib]
+path = "lib.rs"
+
+[build-dependencies]
+crypto-auditing = { workspace = true, features = ["encode"] }

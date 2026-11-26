@@ -44,6 +44,7 @@ libbpf-cargo.workspace = true
 tempfile.workspace = true
 plain.workspace = true
 agenttest = { path = "tests/agenttest" }
+crypto-auditing-agent-dev = { path = "dev" }
 
 [[bin]]
 name = "crau-agent"
