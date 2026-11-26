@@ -76,10 +76,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracker.set_schema(schema);
     tracker.set_range((to_bound(&config.since), to_bound(&config.until)));
 
+    // Periodically flush the contexts started more than the event
+    // window ago, so the tracker does not have to keep all the
+    // contexts in the log.  Unlike the monitor, the timestamps
+    // recorded in the log are used instead of the system time.
+    let mut root_contexts = Vec::new();
+    let mut next_flush = None;
     for group in groups {
         tracker.handle_event_group(&group?);
+
+        let Some(now) = tracker.latest() else {
+            continue;
+        };
+        match next_flush {
+            Some(next_flush) if now < next_flush => continue,
+            Some(_) => {
+                if let Some(before) = now.checked_sub(config.event_window) {
+                    root_contexts.extend(tracker.flush(before));
+                }
+            }
+            None => (),
+        }
+        next_flush = now.checked_add(config.event_window);
     }
-    let root_contexts: Vec<_> = tracker.flush_all().collect();
+    root_contexts.extend(tracker.flush_all());
     let content = serde_json::to_string_pretty(&root_contexts)?;
 
     Pager::new().setup();
