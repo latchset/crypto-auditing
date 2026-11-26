@@ -12,6 +12,11 @@ homepage.workspace = true
 [badges]
 maintenance = { status = "actively-developed" }
 
+[features]
+# Encoding of raw BPF records and synthesizing traces, for generating
+# test fixtures
+encode = []
+
 [dependencies]
 futures.workspace = true
 libc.workspace = true
