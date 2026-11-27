@@ -9,12 +9,11 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.3.2"
+version = "0.4.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 authors = ["The crypto-auditing developers"]
 repository = "https://github.com/latchset/crypto-auditing"
-homepage = "https://github.com/latchset/crypto-auditing"
 
 [workspace.dependencies]
 anyhow = "1.0"
@@ -22,7 +21,7 @@ bindgen = "0.72"
 bytes = "1.2"
 caps = "0.5"
 clap = "4"
-crypto-auditing = { version = "=0.3.2", path = "crypto-auditing" }
+crypto-auditing = { version = "=0.4.0", path = "crypto-auditing" }
 figment = { version = "0.10", features = ["toml"] }
 futures = "0.3"
 hex = "0.4"
