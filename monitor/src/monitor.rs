@@ -92,8 +92,7 @@ struct Writer {
     tracker: ContextTracker,
     event_window: Duration,
     scopes: Vec<String>,
-    timeouts: JoinSet<()>,
-    last_flush: SystemTime,
+    timeouts: JoinSet<Option<SystemTime>>,
 }
 
 impl Writer {
@@ -103,7 +102,6 @@ impl Writer {
             event_window,
             scopes: scopes.to_owned(),
             timeouts: JoinSet::new(),
-            last_flush: SystemTime::now(),
         }
     }
 
@@ -113,7 +111,15 @@ impl Writer {
             group.events_filtered(&self.scopes);
         }
         if self.tracker.handle_event_group(&group) > 0 {
-            self.timeouts.spawn(sleep(self.event_window));
+            // Flush the new root contexts after the event window,
+            // measured in the timestamps the tracker has seen, so that
+            // it is not affected by the inaccuracy of the boot time
+            let before = self.tracker.latest();
+            let event_window = self.event_window;
+            self.timeouts.spawn(async move {
+                sleep(event_window).await;
+                before
+            });
         }
         Ok(())
     }
@@ -130,16 +136,17 @@ impl Writer {
                         group,
                     ).await?
                 },
-                Some(_) = self.timeouts.join_next() => {
-                    if let Some(before) = self.last_flush.checked_add(self.event_window) {
-                        for context in self.tracker.flush(before) {
-                            println!("{}", serde_json::to_string_pretty(&context).unwrap());
-                        }
+                Some(Ok(Some(before))) = self.timeouts.join_next() => {
+                    for context in self.tracker.flush(before) {
+                        println!("{}", serde_json::to_string_pretty(&context).unwrap());
                     }
-                    self.last_flush = SystemTime::now();
                 },
                 _ = shutdown_receiver.recv() => break,
             }
+        }
+
+        for context in self.tracker.flush_all() {
+            println!("{}", serde_json::to_string_pretty(&context).unwrap());
         }
 
         Ok(())
