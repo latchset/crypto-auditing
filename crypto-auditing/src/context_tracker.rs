@@ -7,6 +7,7 @@ use crate::{
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::{Bound, RangeBounds};
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::System;
@@ -47,6 +48,8 @@ pub struct ContextTracker {
     implicit_contexts: HashMap<ContextId, Vec<Weak<RefCell<Context>>>>,
     boot_time: SystemTime,
     latest: Option<SystemTime>,
+    range: (Bound<SystemTime>, Bound<SystemTime>),
+    flushed_before: Option<SystemTime>,
 }
 
 impl ContextTracker {
@@ -65,17 +68,20 @@ impl ContextTracker {
                     .unwrap()
             }),
             latest: None,
+            range: (Bound::Unbounded, Bound::Unbounded),
+            flushed_before: None,
         }
     }
 
     /// Removes the root contexts started at or before `before`, along
-    /// with their descendants, and returns them
+    /// with their descendants, and returns those within the range
     pub fn flush(&mut self, before: SystemTime) -> impl Iterator<Item = Context> {
+        self.flushed_before = self.flushed_before.max(Some(before));
         self.evict(Some(before))
     }
 
     /// Removes all the root contexts, along with their descendants,
-    /// and returns them
+    /// and returns those within the range
     pub fn flush_all(&mut self) -> impl Iterator<Item = Context> {
         self.evict(None)
     }
@@ -150,9 +156,11 @@ impl ContextTracker {
                explicit_parents = %self.explicit_parents.len(),
                "usage statistics after flushing");
 
+        let range = self.range;
         root_contexts
             .into_iter()
             .map(|context| Rc::into_inner(context).unwrap().into_inner())
+            .filter(move |context| range.contains(&context.start) && range.contains(&context.end))
     }
 
     fn last_context(&self, id: &ContextId) -> Option<Rc<RefCell<Context>>> {
@@ -403,6 +411,25 @@ impl ContextTracker {
 
     pub fn set_schema(&mut self, schema: Schema) {
         self.schema = Some(schema);
+    }
+
+    /// Restricts the root contexts returned from `flush` and
+    /// `flush_all` to those started and ended within `range`.  The
+    /// contexts outside the range are still tracked until flushed, so
+    /// that their descendants are not mistaken for root contexts.
+    pub fn set_range(&mut self, range: impl RangeBounds<SystemTime>) {
+        self.range = (range.start_bound().cloned(), range.end_bound().cloned());
+    }
+
+    /// Returns `true` if no root contexts within the range can be
+    /// returned from any subsequent flush, i.e., `flush` has been
+    /// called with a time past the end of the range.  This assumes
+    /// that event groups are handled in the order of their timestamps.
+    pub fn is_range_exhausted(&self) -> bool {
+        match (self.flushed_before, self.range.end_bound()) {
+            (Some(before), Bound::Included(until) | Bound::Excluded(until)) => before > *until,
+            _ => false,
+        }
     }
 
     pub fn root_context_count(&self) -> usize {
