@@ -118,6 +118,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let skel_builder = AuditSkelBuilder::default();
     let mut storage = MaybeUninit::uninit();
     let mut open_skel = skel_builder.open(&mut storage)?;
+    if let Some(size) = config.ringbuf_size {
+        open_skel.maps.ringbuf.set_max_entries(size)?;
+    }
     open_skel.progs.new_context.set_flags(BPF_F_SLEEPABLE);
     open_skel.progs.string_data.set_flags(BPF_F_SLEEPABLE);
     open_skel.progs.word_data.set_flags(BPF_F_SLEEPABLE);

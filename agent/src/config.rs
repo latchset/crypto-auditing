@@ -49,6 +49,9 @@ pub struct Config {
 
     /// Path to debug trace file
     pub trace_file: Option<PathBuf>,
+
+    /// Size of the BPF ring buffer in bytes
+    pub ringbuf_size: Option<u32>,
 }
 
 impl Default for Config {
@@ -61,6 +64,7 @@ impl Default for Config {
             coalesce_window: None,
             max_events: None,
             trace_file: None,
+            ringbuf_size: None,
         }
     }
 }
@@ -110,6 +114,11 @@ struct Cli {
     #[arg(long, value_name = "FILE")]
     #[serde(skip_serializing_if = "Option::is_none")]
     trace_file: Option<PathBuf>,
+
+    /// Size of the BPF ring buffer in bytes
+    #[arg(long, value_name = "SIZE")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ringbuf_size: Option<u32>,
 }
 
 fn deserialize_user<'de, D: Deserializer<'de>>(
@@ -182,6 +191,7 @@ mod tests {
         assert_eq!(config.coalesce_window, None);
         assert_eq!(config.max_events, None);
         assert_eq!(config.trace_file, None);
+        assert_eq!(config.ringbuf_size, None);
     }
 
     #[test]
@@ -201,6 +211,7 @@ format = "packed"
 coalesce_window = 100
 max_events = 1000000
 trace_file = "/tmp/trace"
+ringbuf_size = 262144
 "#,
         );
         let config = parse(&file, &[]).unwrap();
@@ -220,6 +231,7 @@ trace_file = "/tmp/trace"
         assert_eq!(config.coalesce_window, Some(Duration::from_millis(100)));
         assert_eq!(config.max_events, Some(1000000));
         assert_eq!(config.trace_file, Some(PathBuf::from("/tmp/trace")));
+        assert_eq!(config.ringbuf_size, Some(262144));
     }
 
     #[test]
@@ -244,6 +256,8 @@ trace_file = "/tmp/trace"
                 "10",
                 "--trace-file",
                 "/tmp/trace",
+                "--ringbuf-size",
+                "1048576",
             ],
         )
         .unwrap();
@@ -260,6 +274,7 @@ trace_file = "/tmp/trace"
         assert_eq!(config.coalesce_window, Some(Duration::from_millis(200)));
         assert_eq!(config.max_events, Some(10));
         assert_eq!(config.trace_file, Some(PathBuf::from("/tmp/trace")));
+        assert_eq!(config.ringbuf_size, Some(1048576));
     }
 
     #[test]
