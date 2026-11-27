@@ -7,9 +7,11 @@ use crypto_auditing::{
     schema::Schema,
     types::{EventData, EventGroup},
 };
+use jiff::Zoned;
 use pager::Pager;
 use serde_cbor::de::Deserializer;
 use std::io::{self, Write};
+use std::ops::Bound;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
@@ -27,6 +29,11 @@ fn get_boot_time_from_metadata(group: &EventGroup) -> Option<SystemTime> {
         }
     }
     None
+}
+
+fn to_bound(time: &Option<Zoned>) -> Bound<SystemTime> {
+    time.as_ref()
+        .map_or(Bound::Unbounded, |time| Bound::Included(time.into()))
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -67,19 +74,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tracker = ContextTracker::new(boot_time);
     let schema = Schema::builtin();
     tracker.set_schema(schema);
+    tracker.set_range((to_bound(&config.since), to_bound(&config.until)));
 
     for group in groups {
         tracker.handle_event_group(&group?);
     }
-    let root_contexts: Vec<_> = tracker
-        .flush_all()
-        .filter(|c| match (&config.since, &config.until) {
-            (Some(since), Some(until)) => c.start >= since.into() && c.end <= until.into(),
-            (Some(since), None) => c.start >= since.into(),
-            (None, Some(until)) => c.end <= until.into(),
-            (None, None) => true,
-        })
-        .collect();
+    let root_contexts: Vec<_> = tracker.flush_all().collect();
     let content = serde_json::to_string_pretty(&root_contexts)?;
 
     Pager::new().setup();

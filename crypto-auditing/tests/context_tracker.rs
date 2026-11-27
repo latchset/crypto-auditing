@@ -1,9 +1,9 @@
 use crypto_auditing::{
     ContextTracker,
     schema::Schema,
-    types::{ContextId, Event, EventData, EventGroupBuilder},
+    types::{ContextId, Event, EventData, EventGroup, EventGroupBuilder},
 };
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 use tracing_test::traced_test;
 
 const ROOT: ContextId = [0xff; 16];
@@ -315,4 +315,57 @@ fn test_release() {
 
     assert_eq!(tracker.root_context_count(), 0);
     assert_eq!(tracker.context_count(), 0);
+}
+
+fn root_group(id: ContextId, secs: u64) -> EventGroup {
+    EventGroupBuilder::new(id)
+        .start(Duration::from_secs(secs))
+        .end(Duration::from_secs(secs))
+        .event(context_event(id))
+        .event(name_event("root"))
+        .build()
+}
+
+#[traced_test]
+#[test]
+fn test_range() {
+    let at = |secs| UNIX_EPOCH + Duration::from_secs(secs);
+    let mut tracker = ContextTracker::new(Some(UNIX_EPOCH));
+    tracker.set_range(at(2)..=at(3));
+    assert_eq!(tracker.handle_event_group(&root_group(C1, 1)), 1);
+    assert_eq!(tracker.handle_event_group(&root_group(C2, 2)), 1);
+    assert_eq!(tracker.handle_event_group(&root_group(C3, 4)), 1);
+    assert_eq!(tracker.latest(), Some(at(4)));
+
+    // C1 is evicted but outside the range
+    assert_eq!(tracker.flush(at(1)).count(), 0);
+    assert_eq!(tracker.root_context_count(), 2);
+    assert!(!tracker.is_range_exhausted());
+
+    // C2 is evicted and within the range
+    let contexts: Vec<_> = tracker.flush(at(3)).collect();
+    assert_eq!(contexts.len(), 1);
+    assert_eq!(contexts[0].id, C2);
+    assert_eq!(tracker.root_context_count(), 1);
+    assert!(!tracker.is_range_exhausted());
+
+    // C3 is outside the range
+    assert_eq!(tracker.flush_all().count(), 0);
+    assert_eq!(tracker.root_context_count(), 0);
+
+    tracker.flush(at(4)).for_each(drop);
+    assert!(tracker.is_range_exhausted());
+}
+
+#[traced_test]
+#[test]
+fn test_range_unbounded() {
+    let mut tracker = ContextTracker::new(Some(UNIX_EPOCH));
+    assert_eq!(tracker.handle_event_group(&root_group(C1, 1)), 1);
+    assert_eq!(tracker.handle_event_group(&root_group(C2, 2)), 1);
+    assert_eq!(
+        tracker.flush(UNIX_EPOCH + Duration::from_secs(3)).count(),
+        2
+    );
+    assert!(!tracker.is_range_exhausted());
 }
