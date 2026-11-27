@@ -2,62 +2,61 @@
 
 ## Summary
 
-This document specifies the format for crypto-auditing primary event
-logs.
+This document specifies the format of the crypto-auditing primary
+event logs.
 
-To meet the practical use-cases, the proposed format is designed to be
-able to capture events at multiple abstraction levels: from
-invocations of low-level cryptographic primitives to TLS session
-establishment.
+To support practical use cases, the format is designed to capture
+events at multiple levels of abstraction: from invocations of
+low-level cryptographic primitives to TLS session establishment.
 
 ## Design details
 
 ### Goals
 
-- The format can convey contextual information. It can not only
-  represents individual cryptographic events (e.g., RSA signing), but
-  also provide the context (e.g., for which purpose it is used, such
-  as TLS).
-- The format can be represented in a compact form, such as CBOR packed
-  format to eliminating repetition.
-- The format provides basic tolerance of modification, e.g., the log
-  files can be truncated at any record boundary.
+- The format can convey contextual information. It represents not
+  only individual cryptographic events (e.g., RSA signing), but also
+  their context (e.g., the purpose they serve, such as TLS).
+- The format can be stored in a compact form, such as the CBOR packed
+  format, to eliminate repetition.
+- The format tolerates basic modifications; for example, log files can
+  be truncated at any record boundary.
 
 ### Overall structure
 
-Events are classified into two categories: data events and context
-events. Data events represent the events themselves as typed key-value
-pairs. Context events maintain the contexts associated with data
-events.
+Events fall into two categories: data events and context events. Data
+events carry the actual information as typed key-value pairs, while
+context events maintain the contexts with which data events are
+associated.
 
-Contexts are identified by unique 16-byte values called context IDs,
-which are included in all types of events.
+Each context is identified by a unique 16-byte value called a context
+ID, which is included in every event.
 
-Since the crypto-auditing agent monitor multiple processes, event
-sequences may be interleaved with each other. Context IDs enable
-reconstructing interleaved events into same context sequences.
+Since the crypto-auditing agent monitors multiple processes, event
+sequences from different sources may be interleaved. Context IDs make
+it possible to regroup interleaved events into per-context sequences.
 
-In addition to context IDs, a valid context must contain a "name" data
-event as described in the event keys [registry](registry.md).
+In addition to a context ID, a valid context must have a `name` data
+event, as described in the event key [registry](registry.md).
 
-Once a context is no longer in use, a "release_context" event may be
-emitted with the context ID. After that, the context ID may be reused
-for a different context, starting with a new "new_context" event; any
-other events with that context ID in between are ignored.
+Once a context is no longer in use, a `release_context` event may be
+emitted with its context ID. After that, the context ID may be reused
+for a different context, which starts with a new `new_context` event;
+any other events with that context ID in between are ignored.
 
 ### Example: TLS client handshake
 
-A TLS handshake consists of several cryptographic operations, such as
+A TLS handshake involves several cryptographic operations, such as
 digital signature verification and key derivation. For simplicity,
-let's assume only digital signature operations are involved.
+assume that only digital signature operations are involved.
 
-There will be two contexts: one for the entire TLS handshake, and
-another for digital signature verification or creation. Each context is
-associated with data events that describe the details of those events,
-e.g., TLS protocol version and digital signature algorithm used.
+In this case, there are two contexts: one for the entire TLS
+handshake, and another for the digital signature verification (or
+creation). Each context is associated with data events that describe
+its details, such as the TLS protocol version and the digital
+signature algorithm used.
 
-Therefore, at a high level, a TLS client handshake is represented as
-a tree as follows:
+At a high level, a TLS client handshake is therefore represented as
+the following tree:
 
 - `tls::handshake` (00..01)
   - `tls::role` = "client"
@@ -66,10 +65,10 @@ a tree as follows:
     - `tls::signature_algorithm` = 0x0804
     - `pk::bits` = 3072
 
-At a low level, this is represented as a stream of structured event
-entries.  If the log file is represented as a JSON array, it would
-conceptually look like the following, though a more efficient (binary)
-format is used in practice.
+At a low level, it is represented as a stream of structured event
+entries. If the log file were represented as a JSON array, it would
+conceptually look like the following, although a more efficient
+binary format is used in practice.
 
 ```json
 [
@@ -118,17 +117,17 @@ format is used in practice.
 
 ### Guidance on defining events
 
-This section provides some guidance on designing and organizing the
-events for a new protocol.
+This section provides guidance on designing and organizing events for
+a new protocol.
 
 #### Event keys
 
-Within a given context, event keys are unique and consist of
-alphanumeric characters and underscores. They may optionally be
-prefixed with a scope delimited by "::", which represents a protocol
-namespace such as TLS.
+Within a given context, event keys are unique. A key consists of
+letters, digits, and underscores, and starts with a letter. It may
+optionally be prefixed with a scope followed by "::", which represents
+a protocol namespace such as TLS.
 
-Formally, they are written in ABNF as follows:
+Formally, the syntax is defined in ABNF as follows:
 
 ```text
 nchars = ALPHA *(ALPHA / DIGIT / "_")
@@ -138,52 +137,52 @@ key = [nchars "::"] nchars
 
 #### Event values
 
-A data event conveys a data item that is either a NUL-terminated string,
-an integer that fits in a machine word, or an arbitrary blob with a
+A data event carries a value that is either a NUL-terminated string,
+an integer that fits in a machine word, or an arbitrary blob of a
 specified length.
 
 For example, `name` takes a string value, while
-`tls::protocol_version` takes an integer that corresponds to the
-[`ProtocolVersion`][protocol-version] value in TLS.
+`tls::protocol_version` takes an integer corresponding to the TLS
+[`ProtocolVersion`][protocol-version] value.
 
-For values that don't have an integral value assigned by the protocol
-standards, it's recommended to use a string value instead of coming up
-with synthetic integer ones.
+For values that have no integer code assigned by the protocol
+standards, it is recommended to use a string instead of inventing
+synthetic integer values.
 
-While it is possible to represent a boolean value by choosing whether
-or not to emit a data event, it is recommended to explicitly emit an
-integer data event with value 0 or 1. This allows the application to
-determine the value immediately, even when event sequence compression
-(see below) is enabled.
+Although a boolean value could be represented by whether or not a data
+event is emitted, it is recommended to explicitly emit an integer data
+event with the value 0 or 1. This allows consumers to determine the
+value immediately, even when event sequence compression (described
+below) is enabled.
 
 #### Context ID construction
 
-For security and privacy reasons, context IDs should be constructed to
-not reveal internal state of target programs, such as PIDs or memory
-addresses, although such information may be used as input to the
-construction algorithm. The recommended way to construct a context ID
-is as follows:
+For security and privacy reasons, context IDs should be constructed so
+that they do not reveal the internal state of the target programs,
+such as PIDs or memory addresses, although such information may be
+used as input to the construction. The recommended construction is as
+follows:
 
-- The agent initializes an encryption key for AES-ECB at startup
-- An 8-byte context ID and an 8-byte PID/TGID of the target program
-  are concatenated to construct a 16-byte input (i.e., a single AES-ECB
-  block)
-- The 16-byte input is encrypted with AES-ECB using the key created above
+- At startup, the agent generates an encryption key for AES-ECB
+- The 8-byte context value supplied by the probe and the 8-byte
+  PID/TGID of the target program are concatenated to form a 16-byte
+  input (i.e., a single AES block)
+- The 16-byte input is encrypted with AES-ECB using that key
 
 This is inspired by a similar mechanism for [record number
-encryption][rn-enc] in the QUIC and DTLS 1.3 protocols. With the AES-NI
-instruction set enabled, this procedure takes up to 15 cycles.
+encryption][rn-enc] in QUIC and DTLS 1.3. With the AES-NI instruction
+set, this procedure takes up to 15 cycles.
 
-The agent may periodically rotate the key.
+The agent may rotate the key periodically.
 
 #### Event sequence compression based on context
 
-When multiple events are sent within a single context, the same
-context IDs are written to the log file, which can unnecessarily
-consume disk space. Therefore, the log format supports compression of
-consecutive events that share the same context ID within a given time
-window. With compression enabled, the above example would look like the
-following while preserving the same semantics:
+When multiple events are emitted within a single context, the same
+context ID is written to the log file repeatedly, which wastes disk
+space. The log format therefore supports grouping consecutive events
+that share the same context ID within a given time window. With this
+compression, the example above looks like the following while
+preserving the same semantics:
 
 ```json
 [
@@ -225,7 +224,7 @@ following while preserving the same semantics:
             },
             {
                 "type": "word_data",
-                "pk::rsa_size": 3072
+                "pk::bits": 3072
             }
         ]
     }
@@ -234,9 +233,9 @@ following while preserving the same semantics:
 
 ### Mapping to CBOR
 
-The recommended format for storing events is a sequence of
-[CBOR] (Concise Binary Object Representation) objects. The following
-is the formal definition in [CDDL] (Concise Data Definition Language):
+The recommended storage format for events is a sequence of [CBOR]
+(Concise Binary Object Representation) objects. The formal definition
+in [CDDL] (Concise Data Definition Language) is as follows:
 
 ```text
 LogEntry = EventGroup
@@ -270,22 +269,21 @@ Data = {
 }
 ```
 
-The log consists of a series of `EventGroup` objects, each grouping
-events within a given time window from `start` to `end`. Timestamps are
-represented as monotonic durations from kernel boot time.
-`ContextId` is an encrypted 16-byte context identifier.
+The log consists of a series of `EventGroup` objects, each of which
+groups the events that occurred within the time window from `start`
+to `end`. Timestamps are represented as monotonic durations since
+kernel boot. `ContextId` is the encrypted 16-byte context identifier.
 
 The first `EventGroup` may be a virtual metadata group with an
-all-zero `ContextId`. This is used to include environmental
-information as event entries. The following events are currently
-defined:
+all-zero `ContextId`, which carries information about the environment
+as event entries. The following keys are currently defined:
 
-| key         | value type | description                                 |
-|-------------|------------|---------------------------------------------|
-| `version`   | word       | the file format version (should be 1)       |
-| `boot_time` | word       | kernel boot time in seconds from Unix epoch |
+| key         | value type | description                                  |
+|-------------|------------|----------------------------------------------|
+| `version`   | word       | the file format version (currently 1)        |
+| `boot_time` | word       | kernel boot time in seconds since Unix epoch |
 
-[CBOR]: https://www.rfc-editor.org/rfc/rfc7049
+[CBOR]: https://www.rfc-editor.org/rfc/rfc8949
 [CDDL]: https://www.rfc-editor.org/rfc/rfc8610
 [protocol-version]: https://www.rfc-editor.org/info/rfc8446/#appendix-D.1
 [rn-enc]: https://www.rfc-editor.org/rfc/rfc9147.html#name-record-number-encryption

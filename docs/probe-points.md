@@ -5,31 +5,31 @@
 This document specifies the USDT (user statically defined tracepoints)
 probe points used by the crypto-auditing agent.
 
-While tracepoints defined in the [kernel][kernel-tracepoints] are not
-considered as part of the stable ABI, USDT defined in userspace
-libraries could be treated as stable and the upstream projects might
-need to preserve compatibility for certain release cycles.
+While [kernel tracepoints][kernel-tracepoints] are not considered part
+of the stable ABI, USDT probes defined in user-space libraries could
+be treated as stable, and upstream projects might need to preserve
+their compatibility across certain release cycles.
 
-Therefore, this proposal aims to define USDT probe points as few as
-possible to express any type of interesting events.
+Therefore, this proposal aims to define as few USDT probe points as
+possible, while still being able to express any type of event of
+interest.
 
 ## Design details
 
 ### Goals
 
-- Easy to integrate: target libraries are easily instrumented using a
-  set of pre-defined macros, without any external dependency
-- Easy to maintain: the probe interface is stable and does not impose
-  any versioning requirements
+- Easy to integrate: target libraries can be instrumented easily using
+  a set of predefined macros, without any external dependencies
+- Easy to maintain: the probe interface is stable and imposes no
+  versioning requirements
 - Performance: the amount of data exchanged between the kernel and
-  user space programs should be reasonably small, while the frequency
-  of data exchanges between the kernel and user space should be
-  considered linear to the actual event frequency
+  user space should be reasonably small, and the frequency of these
+  exchanges should scale linearly with the actual event frequency
 
 ### Non-goals
 
-- Simplicity: the probe points may not directly map to the protocol
-  element
+- Simplicity: the probe points do not necessarily map directly to
+  protocol elements
 
 ### Probe interface
 
@@ -37,7 +37,7 @@ Programs being traced (typically cryptographic libraries) define USDT
 probes as follows:
 
 ```c
-/* Assert a parent-child relationship between two contexts, a child
+/* Assert a parent-child relationship between two contexts: a child
  * CONTEXT and its PARENT.
  */
 # define CRYPTO_AUDITING_NEW_CONTEXT(context, parent)				\
@@ -50,98 +50,101 @@ probes as follows:
 	DTRACE_PROBE1(crypto_auditing, release_context, context)
 
 /* Assert an event with KEY and VALUE. The key is treated as a
- * NUL-terminated string, while the value is in the size of machine
- * word
+ * NUL-terminated string, while the value is a machine word.
  */
 # define CRYPTO_AUDITING_WORD_DATA(context, key_ptr, value_ptr)			\
 	DTRACE_PROBE3(crypto_auditing, word_data, context, key_ptr, value_ptr)
 
-/* Assert an event with KEY and VALUE. Both the key and value are
- * treated as a NUL-terminated string
+/* Assert an event with KEY and VALUE. Both the key and the value are
+ * treated as NUL-terminated strings.
  */
 # define CRYPTO_AUDITING_STRING_DATA(context, key_ptr, value_ptr)			\
 	DTRACE_PROBE3(crypto_auditing, string_data, context, key_ptr, value_ptr)
 
 /* Assert an event with KEY and VALUE. The key is treated as a
- * NUL-terminated string, while the value is explicitly sized with
- * VALUE_SIZE
+ * NUL-terminated string, while the size of the value is explicitly
+ * given by VALUE_SIZE.
  */
-# define CRYPTO_AUDITING_BLOB_DATA(key_ptr, context, value_ptr, value_size)	\
+# define CRYPTO_AUDITING_BLOB_DATA(context, key_ptr, value_ptr, value_size)	\
 	DTRACE_PROBE4(crypto_auditing, blob_data, context, key_ptr, value_ptr, value_size)
 ```
 
-These macros can be invoked in the application logic:
+These macros can then be invoked in the application logic:
 
 ```c
-/* Start TLS client handshake */
-CRYPTO_AUDITING_NEW_CONTEXT(context, NULL);
+/* Start a TLS client handshake; as the handshake has no parent
+ * context, use a non-zero value that never identifies a context
+ */
+CRYPTO_AUDITING_NEW_CONTEXT(context, 1);
 
-/* Indicate that this context is about TLS client handshake */
-CRYPTO_AUDITING_STRING_DATA(context, "name", "tls::handshake_client");
+/* Indicate that this context is a TLS handshake */
+CRYPTO_AUDITING_STRING_DATA(context, "name", "tls::handshake");
 
-/* Indicate that TLS 1.3 is selected */
+/* Indicate that the local endpoint acts as a client */
+CRYPTO_AUDITING_STRING_DATA(context, "tls::role", "client");
+
+/* Indicate that TLS 1.3 has been selected */
 CRYPTO_AUDITING_WORD_DATA(context, "tls::protocol_version", 0x0304);
 
 /* The context object is about to be freed */
 CRYPTO_AUDITING_RELEASE_CONTEXT(context);
 ```
 
-where `context` can be any object with the size of a machine word (a
-pointer or `long`, i.e., a 64-bit integer on LP64 platforms), but must
-not be zero. The agent may ignore events if their contexts are
-zero.
+where `context` can be any value of machine-word size (a pointer or a
+`long`, i.e., a 64-bit integer on LP64 platforms), but must not be
+zero. The agent may ignore events whose context is zero.
 
-In library instrumentation, context objects are typically pointers to
-allocated objects. If allocation fails, the pointers will be
-NULL. Prohibiting all-zero contexts would help prevent this situation,
-without imposing an explicit NULL check on the library side. To
-represent a context without a parent, use a non-zero special value.
+In library instrumentation, contexts are typically pointers to
+allocated objects. If an allocation fails, the pointer will be
+NULL. Disallowing zero contexts lets the agent discard events
+associated with such failed allocations, without requiring an explicit
+NULL check on the library side. To represent a context without a
+parent, use a non-zero special value.
 
 #### Protocol between BPF programs and the agent
 
-There are 5 basic types of USDT probe points to which a BPF program
-can attach: `new_context`, `release_context`, `word_data`,
+There are five basic types of USDT probe points to which a BPF
+program can attach: `new_context`, `release_context`, `word_data`,
 `string_data`, and `blob_data`.
 
-`new_context` is used for asserting a parent-child relationship
-between two contexts, `release_context` is used for retiring a
-context, while the latter 3 are used for notifying data events:
+`new_context` asserts a parent-child relationship between two
+contexts, `release_context` retires a context, and the remaining three
+notify data events:
 
-- `new_context(context, parent)`: indicate a context under a given parent
-- `release_context(context)`: indicate that a context is retired
-- `word_data(context, key, value)`: indicate an event of a machine
-  word
-- `string_data(context, key, value)`: indicate an event of a
-  NUL-terminated string
-- `blob_data(context, key, value, value_size)`: indicate an event of a
-  binary blob
+- `new_context(context, parent)`: indicates a new context under the
+  given parent
+- `release_context(context)`: indicates that the context is retired
+- `word_data(context, key, value)`: indicates an event with a
+  machine-word value
+- `string_data(context, key, value)`: indicates an event with a
+  NUL-terminated string value
+- `blob_data(context, key, value, value_size)`: indicates an event
+  with a binary blob value
 
-Since context objects are typically pointers to allocated objects,
-the same value may be reused for an unrelated context once the
-original object is freed. `release_context` allows the library to
-voluntarily declare that a context is no longer in use, so that any
-subsequent events with the same value are not associated with the
-retired context:
+Since contexts are typically pointers to allocated objects, the same
+value may be reused for an unrelated context once the original object
+is freed. `release_context` allows the library to explicitly declare
+that a context is no longer in use, so that subsequent events with the
+same value are not associated with the retired context:
 
-- data events sent to a released context are ignored until it is
+- Data events sent to a released context are ignored until it is
   re-created with `new_context`
-- a released context can no longer become a parent of other contexts,
-  either implicitly or explicitly
-- events already associated with a released context, as well as its
+- A released context can no longer become the parent of other
+  contexts, either implicitly or explicitly
+- Events already associated with a released context, as well as its
   child contexts, are preserved
 
 Emitting `release_context` is optional; if it is not emitted, the
-consumer falls back to heuristics, such as the schema-based parent
+consumer falls back to heuristics, such as schema-based parent
 inference, to disambiguate reused values.
 
-Additionally, there are 2 extended USDT probe points which combine the
-above:
+Additionally, there are two extended USDT probe points that combine
+the above:
 
 - `new_context_with_data(context, parent, array_ptr, array_size)`
 - `data(context, array_ptr, array_size)`
 
-Both probe points take a typed array of data events in the following
-structure:
+Both take an array of typed data events with the following structure:
 
 ```c
 struct crypto_auditing_data {
@@ -151,35 +154,34 @@ struct crypto_auditing_data {
 };
 ```
 
-where the `value_size` field is set depending on the type of the
-value. If the value is a machine word, it is set to 0xfffffffe (= -2,
-in 2's complement representation). If the value is a NUL-terminated
-string, it is set to 0xffffffff (= -1). Otherwise, it is set to the
-actual size of the value.
+where the `value_size` field depends on the type of the value: if the
+value is a machine word, it is set to `(unsigned long)-2`; if the
+value is a NUL-terminated string, it is set to `(unsigned long)-1`;
+otherwise, it is set to the actual size of the value in bytes.
 
 These probe points were introduced to reduce the number of context
-switches between a BPF program and the crypto-auditing agent. There
-is, however, one drawback: since reading the contents of the array is
-not an atomic operation, the memory may be unmapped. Therefore, to
-attach those probe points, the BPF program must be loaded as
-[sleepable] and using `bpf_copy_from_user` instead of
+switches between the BPF program and the crypto-auditing agent. They
+have one drawback, however: the array is read from user-space memory
+that may not be paged in, so reading it may fault. Therefore, to
+attach to these probe points, the BPF program must be loaded as
+[sleepable] and use `bpf_copy_from_user` instead of
 `bpf_probe_read_user`.
 
 ### Drawbacks and alternatives
 
 #### Overhead of using string keys
 
-While storing event keys as an arbitrary-length string brings
-flexibility, that would require BPF programs to access memory in
-userspace, using `bpf_probe_read_user_str`.  If that imposes too much
-overhead, we may consider using integer codepoints instead.
+While representing event keys as arbitrary-length strings provides
+flexibility, it requires BPF programs to read user-space memory using
+`bpf_probe_read_user_str`. If this incurs too much overhead, we may
+consider using integer code points instead.
 
-#### Using implementation specific probe points
+#### Using implementation-specific probe points
 
-Instead of using a key-value based event description, it is possible
-to define probe points that directly corresponds to particular
-implementation detail.  The following is an attempt along these lines,
-assuming internal algorithm identifiers used in GnuTLS:
+Instead of key-value based event descriptions, it is possible to
+define probe points that directly correspond to particular
+implementation details. The following is an attempt along these
+lines, using the internal algorithm identifiers of GnuTLS:
 
 ```c
 client_session_id = *session_id;
@@ -198,14 +200,12 @@ DTRACE_PROBE4(gnutls_cryptoaudit, private_sign_data,
 
 This approach has a couple of drawbacks:
 
-- **ABI stability**: since the probe points are exposed through ELF
-  binary, the upstream project would need to maintain them as part of
-  the ABI
-- **Complexity of event mapping**: suppose a consumer wants to take a
-  statistics of algorithms used in TLS handshake, the consumer needs
-  to have knowledge on how those are represented in supported TLS
-  libraries
+- **ABI stability**: since the probe points are exposed through the
+  ELF binary, the upstream project would need to maintain them as part
+  of its ABI
+- **Complexity of event mapping**: if a consumer wants to gather
+  statistics on the algorithms used in TLS handshakes, it needs to
+  know how they are represented in each supported TLS library
 
 [kernel-tracepoints]: https://www.kernel.org/doc/html/latest/bpf/bpf_design_QA.html#q-are-tracepoints-part-of-the-stable-abi
-[protocol-version]: https://www.rfc-editor.org/rfc/rfc8446#appendix-B.3.1
 [sleepable]: https://lwn.net/Articles/825415/
