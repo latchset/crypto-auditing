@@ -131,8 +131,10 @@ impl Writer {
                     ).await?
                 },
                 Some(_) = self.timeouts.join_next() => {
-                    for context in self.tracker.flush(self.last_flush.checked_add(self.event_window)) {
-                        println!("{}", serde_json::to_string_pretty(&context).unwrap());
+                    if let Some(before) = self.last_flush.checked_add(self.event_window) {
+                        for context in self.tracker.flush(before) {
+                            println!("{}", serde_json::to_string_pretty(&context).unwrap());
+                        }
                     }
                     self.last_flush = SystemTime::now();
                 },

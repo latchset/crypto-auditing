@@ -59,7 +59,7 @@ fn test_explicit() {
     assert_eq!(tracker.root_context_count(), 1);
     assert_eq!(tracker.context_count(), 3);
 
-    assert_eq!(tracker.flush(None).into_iter().count(), 1);
+    assert_eq!(tracker.flush_all().count(), 1);
 
     assert_eq!(tracker.root_context_count(), 0);
     assert_eq!(tracker.context_count(), 0);
@@ -168,7 +168,7 @@ fn test_implicit_explicit() {
     assert_eq!(tracker.root_context_count(), 3);
     assert_eq!(tracker.context_count(), 7);
 
-    assert_eq!(tracker.flush(None).into_iter().count(), 3);
+    assert_eq!(tracker.flush_all().count(), 3);
 
     assert_eq!(tracker.root_context_count(), 0);
     assert_eq!(tracker.context_count(), 0);
@@ -237,7 +237,7 @@ fn test_implicit_explicit_gaps() {
     assert_eq!(tracker.root_context_count(), 1);
     assert_eq!(tracker.context_count(), 4);
 
-    assert_eq!(tracker.flush(None).into_iter().count(), 1);
+    assert_eq!(tracker.flush_all().count(), 1);
 
     assert_eq!(tracker.root_context_count(), 0);
     assert_eq!(tracker.context_count(), 0);
@@ -308,7 +308,7 @@ fn test_release() {
     assert_eq!(tracker.root_context_count(), 3);
     assert_eq!(tracker.context_count(), 1);
 
-    let contexts: Vec<_> = tracker.flush(None).into_iter().collect();
+    let contexts: Vec<_> = tracker.flush_all().collect();
     assert_eq!(contexts.len(), 3);
     assert!(contexts.iter().all(|c| c.spans.is_empty()));
     assert!(contexts.iter().all(|c| !c.events.contains_key("a::k")));
