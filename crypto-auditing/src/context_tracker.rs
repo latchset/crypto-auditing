@@ -46,6 +46,7 @@ pub struct ContextTracker {
     schema: Option<Schema>,
     implicit_contexts: HashMap<ContextId, Vec<Weak<RefCell<Context>>>>,
     boot_time: SystemTime,
+    latest: Option<SystemTime>,
 }
 
 impl ContextTracker {
@@ -63,10 +64,28 @@ impl ContextTracker {
                     .checked_add(Duration::from_secs(System::boot_time()))
                     .unwrap()
             }),
+            latest: None,
         }
     }
 
-    pub fn flush(&mut self, before: Option<SystemTime>) -> impl IntoIterator<Item = Context> {
+    /// Removes the root contexts started at or before `before`, along
+    /// with their descendants, and returns them
+    pub fn flush(&mut self, before: SystemTime) -> impl Iterator<Item = Context> {
+        self.evict(Some(before))
+    }
+
+    /// Removes all the root contexts, along with their descendants,
+    /// and returns them
+    pub fn flush_all(&mut self) -> impl Iterator<Item = Context> {
+        self.evict(None)
+    }
+
+    /// Returns the end time of the most recent event group handled
+    pub fn latest(&self) -> Option<SystemTime> {
+        self.latest
+    }
+
+    fn evict(&mut self, before: Option<SystemTime>) -> impl Iterator<Item = Context> {
         debug!(root_contexts = %self.root_contexts.len(),
                larval_contexts = %self.larval_contexts.len(),
                all_contexts = %self.all_contexts.len(),
@@ -366,6 +385,7 @@ impl ContextTracker {
     pub fn handle_event_group(&mut self, group: &EventGroup) -> usize {
         let start = self.resolve_system_time(group.start());
         let end = self.resolve_system_time(group.end());
+        self.latest = self.latest.max(Some(end));
         let mut count = 0;
         for event in group.events() {
             match self.handle_event(group.context(), start, end, event) {

@@ -72,8 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracker.handle_event_group(&group?);
     }
     let root_contexts: Vec<_> = tracker
-        .flush(None)
-        .into_iter()
+        .flush_all()
         .filter(|c| match (&config.since, &config.until) {
             (Some(since), Some(until)) => c.start >= since.into() && c.end <= until.into(),
             (Some(since), None) => c.start >= since.into(),
