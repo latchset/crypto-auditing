@@ -2,17 +2,16 @@
 
 Tracing metadata across supported protocols follows a hierarchical
 model consisting of contexts and leaf data events. This document
-defines the formal syntax used to describe this structured hierarchy.
+defines the formal syntax used to describe this hierarchy.
 
 ## Miscellaneous
 
-Comments follow C-style block syntax. They begin with `/*` and
-terminate with `*/`. Comments do not nest and carry no semantic value.
+Comments use C-style block syntax: they begin with `/*` and end with
+`*/`. Comments do not nest and have no semantic meaning.
 
 ## Scopes
 
-A scope establishes an explicit namespace to logically group related
-protocol events.
+A scope defines a namespace that groups related protocol events.
 
 *Syntax:*
 
@@ -22,21 +21,21 @@ scope <name> {
 }
 ```
 
-where `<name>` is an identifier representing the namespace, and the
-enclosed block accepts one or more event declarations.
+where `<name>` is an identifier naming the namespace, and the enclosed
+block contains one or more event declarations.
 
 ## Event categories
 
-The schema distinguishes between two event types: Data Events and
-Context Events.
+The schema distinguishes between two kinds of events: data events and
+context events.
 
-Implementation Note: All defined events are optional within emitted
-traces. Consuming applications must handle omitted fields gracefully
-and not assume event presence.
+Implementation note: all defined events are optional in emitted
+traces. Consumers must handle omitted events gracefully and must not
+assume that any event is present.
 
 ### Data events
 
-Data events represent leaf key-value pairs assigned to a context.
+Data events are leaf key-value pairs attached to a context.
 
 *Syntax:*
 
@@ -44,9 +43,13 @@ Data events represent leaf key-value pairs assigned to a context.
 <name>: <type>;
 ```
 
-where `<name>` is the identifier of the data event and `<type>` is the data type of the value.
+where `<name>` is the identifier of the data event and `<type>` is the
+type of its value.
 
 #### Supported data types
+
+The *representation* column shows how values of each type are carried
+in probe events (see [USDT probe points](probe-points.md)).
 
 | type   | representation | description                       |
 |--------|----------------|-----------------------------------|
@@ -64,8 +67,8 @@ where `<name>` is the identifier of the data event and `<type>` is the data type
 
 ### Context events
 
-Context events establish structural nodes within the event tree using
-the `context` keyword.
+Context events define structural nodes in the event tree using the
+`context` keyword.
 
 *Syntax:*
 
@@ -75,16 +78,16 @@ context <name1>[, <name2>...] {
 }
 ```
 
-A context declaration accepts either a single name or a
-comma-separated list of names that share identical block contents. The
-enclosed block may contain data events or child context events,
-allowing arbitrary nesting.
+A context declaration takes either a single name or a comma-separated
+list of names that share the same block contents. The block may
+contain data events, child context events, and `allowed_children`
+directives, allowing arbitrary nesting.
 
 #### Nesting rules
 
-The context hierarchy defined in the schema is invariant within a
-given scope. A child context cannot be moved to the root level or
-attached to an undeclared parent context.
+The context hierarchy defined in the schema is fixed within a given
+scope: a child context cannot be moved to the root level or attached
+to a parent context other than the one in which it is declared.
 
 *Example:*
 
@@ -100,26 +103,27 @@ context c1 {
 }
 ```
 
-In this structure, the outermost context `c1` contains scalar `s1` and
-nested context `c2`. Context `c2` contains scalar `u1` alongside
-context events `c3` and `c4`, both of which enclose data event
-`i1`. Runtime events must preserve this precise hierarchy; `c2` cannot
-appear at the top level, nor can `c3` be placed directly beneath `c1`.
+In this structure, the outermost context `c1` contains the data event
+`s1` and the nested context `c2`. Context `c2` contains the data event
+`u1` and the contexts `c3` and `c4`, both of which contain the data
+event `i1`. Runtime events must follow this exact hierarchy: `c2`
+cannot appear at the top level, nor can `c3` appear directly under
+`c1`.
 
 #### The `allowed_children` directive
 
-By default, only explicitly declared inline child contexts may appear
-under a parent context. To allow external top-level context events as
-valid runtime children, a context must declare an `allowed_children`
+By default, only child contexts declared inline may appear under a
+parent context. To also accept top-level contexts declared elsewhere
+as runtime children, a context must declare an `allowed_children`
 directive.
 
-This directive takes a comma-separated list of pattern declarations
-using the syntax `allowed_children <pattern1>[, <pattern2>, ...];`. A
-pattern can specify an explicit context name in the current scope
-(`<context_name>`), an explicit context in an external scope
-(`<scope_name>::<context_name>`), or a wildcard matching all top-level
-contexts in a given scope (`<scope_name>::*`). If the scope prefix is
-omitted, the current scope is assumed.
+The directive takes a comma-separated list of patterns, using the
+syntax `allowed_children <pattern1>[, <pattern2>, ...];`. A pattern
+can be a context name in the current scope (`<context_name>`), a
+context in another scope (`<scope_name>::<context_name>`), or a
+wildcard matching all top-level contexts in a given scope
+(`<scope_name>::*`). If the scope prefix is omitted, the current scope
+is assumed.
 
 For example:
 
@@ -138,11 +142,10 @@ scope this {
 }
 ```
 
-Here, context `c2` explicitly permits either `this::c3` or any
-top-level context defined within the `other` scope to appear as valid
-runtime children.
+Here, context `c2` permits `this::c3` and any top-level context
+defined in the `other` scope to appear as its runtime children.
 
-Note that any recursive definitions, either direct or indirect, are
-prohibited. In this example, it is an error to write `allowed_children c1;`
-instead of `allowed_children c3, other::*;` even if `c1` is also
-a top-level.
+Note that recursive definitions, whether direct or indirect, are
+prohibited. In this example, it would be an error to write
+`allowed_children c1;` instead of `allowed_children c3, other::*;`,
+even though `c1` is also a top-level context.

@@ -4,9 +4,9 @@
 - [Summary](#summary)
 - [Motivation](#motivation)
   - [Goals](#goals)
-  - [Non-Goals](#non-goals)
+  - [Non-goals](#non-goals)
 - [Proposal](#proposal)
-  - [User Stories](#user-stories)
+  - [User stories](#user-stories)
     - [Gather Aggregated Statistics on TLS Cipher Suites](#gather-aggregated-statistics-on-tls-cipher-suites)
     - [Identify Specific Uses of SHA-1 in Signatures](#identify-specific-uses-of-sha-1-in-signatures)
     - [Identify Potentially Insecure Algorithms Used in an Organization](#identify-potentially-insecure-algorithms-used-in-an-organization)
@@ -15,6 +15,8 @@
   - [Architecture](#architecture)
   - [Collected information](#collected-information)
   - [Probes](#probes)
+  - [Implementation notes](#implementation-notes)
+  - [Prior art](#prior-art)
   - [Test Plan](#test-plan)
   - [Upgrade / Downgrade Strategy](#upgrade--downgrade-strategy)
 - [Drawbacks](#drawbacks)
@@ -23,40 +25,38 @@
 
 ## Summary
 
-This project aims to create the infrastructure needed to audit crypto
-operations performed by crypto libraries on a system. This is
-accomplished by instrumenting specific entry points in crypto
-libraries, as they are used by user space processes on the system, and
-collect data so that it can be analyzed later.
+This project aims to build the infrastructure needed to audit
+cryptographic operations performed by cryptographic libraries on a
+system. This is achieved by instrumenting specific entry points in the
+libraries used by user-space processes, and collecting data for later
+analysis.
 
 ## Motivation
 
-As security research advances, it is not uncommon that crypto
-algorithms/protocols that were once considered secure are now known to
-be vulnerable. To maintain the information systems to be secure
-according to the current status quo, the best practice is for the
-local and organizational administrators to ensure that the systems are
-using only secure algorithms.
+As security research advances, it is not uncommon for cryptographic
+algorithms and protocols that were once considered secure to be found
+vulnerable. To keep information systems secure by current standards,
+the best practice is for local and organizational administrators to
+ensure that their systems use only secure algorithms.
 
-Fedora and RHEL provide a system-wide [mechanism](crypto-policies) to
-enforce policies on which crypto algorithms are allowed on the
-system. It is, however, possible for the local administrator to relax
-the policy to work around legacy applications, as well as the policies
-themselves need to evolve over time to reflect recent advances in
-research.
+Fedora and RHEL provide a system-wide [mechanism][crypto-policies] to
+enforce policies on which cryptographic algorithms are allowed on the
+system. However, local administrators can relax the policy to
+accommodate legacy applications, and the policies themselves need to
+evolve over time to reflect advances in research.
 
-Therefore, a mechanism is needed to audit the actual usage of crypto
-operations on the systems.
+Therefore, a mechanism is needed to audit the actual use of
+cryptographic operations on systems.
 
 ### Goals
 
-* Provide data to a local system administrator that is analyzing the
-  system configuration/behavior
+* Provide data to local system administrators who are analyzing the
+  system configuration and behavior
 
-* Provide data to some central collection party that can then
-  correlate/analyze data across multiple machines. This will provide
-  valuable information on what is actually being used so that informed
-  decisions can be made in terms of future policy.
+* Provide data to a central collection party that can correlate and
+  analyze data across multiple machines. This gives valuable insight
+  into which algorithms are actually in use, so that informed
+  decisions can be made about future policy.
 
 ### Non-goals
 
@@ -66,131 +66,136 @@ TBD
 
 ### User stories
 
-The following user stories describe use cases that we want to be able
-to solve with the crypto auditing project, and will be used as inputs
-for design decisions.
+The following user stories describe use cases that the crypto-auditing
+project aims to address. They serve as input to design decisions.
 
 #### Gather Aggregated Statistics on TLS Cipher Suites
 
-When making decisions on defaults for the entire distribution, it
-would be helpful to be able to judge how many of our customers will be
-negatively impacted by tighter defaults. Mozilla has faced a similar
-problem for their Firefox browser, and has implemented telemetry that
-gives them anonymized statistics on the used [TLS versions] and
-[negotiated cipher suites].
+When deciding on defaults for the entire distribution, it would be
+helpful to estimate how many of our customers would be negatively
+affected by stricter defaults. Mozilla faced a similar problem with
+the Firefox browser, and implemented telemetry that provides
+anonymized statistics on the [TLS versions] used and the [negotiated
+cipher suites].
 
-As a member of the crypto team and maintainer of a crypto library for RHEL, I want anonymized aggregated statistics on the TLS version, negotiated cipher suites and other relevant details of a TLS handshake (e.g., asymmetric cryptosystem, key size), collected from a consenting subset of our customers’ machines, so that I can take informed decisions on whether tightening the defaults further will cause our customers big problems or not.
+As a member of the crypto team and a maintainer of a cryptographic
+library for RHEL, I want anonymized, aggregated statistics on TLS
+versions, negotiated cipher suites, and other relevant details of TLS
+handshakes (e.g., the asymmetric cryptosystem and key size), collected
+from a consenting subset of our customers' machines, so that I can
+make informed decisions about whether tightening the defaults further
+would cause significant problems for our customers.
 
 #### Identify Specific Uses of SHA-1 in Signatures
 
-At Real World Crypto 2020 in Singapore, Leurent and Peyrin presented
-“[SHA-1 is a Shambles]” ([paper][sha1-paper]), a new chosen-prefix collision
-attack. The authors estimate the attack cost at about 45k USD in 2020,
-with a projection of 10k USD in 2025. Since chosen-prefix collisions
-make signatures vulnerable, and the authors presented the attack with
-a signature on PGP keys, we should collectively stop relying on
-signatures that use SHA-1 as digest. Crypto auditing should help with
-this by making the use of SHA-1 in signatures traceable.
+At Real World Crypto 2020 in New York, Leurent and Peyrin presented
+"[SHA-1 is a Shambles]" ([paper][sha1-paper]), a new chosen-prefix
+collision attack on SHA-1. The authors estimated the cost of the
+attack at about USD 45k in 2020, projected to drop to USD 10k by
+2025. Since chosen-prefix collisions make signatures forgeable, and
+the authors demonstrated the attack on PGP key signatures, we should
+collectively stop relying on signatures that use SHA-1 as the
+digest. Crypto auditing should help with this by making uses of SHA-1
+in signatures traceable.
 
-Completely disabling the SHA-1 algorithm is unfortunately not an
-option, since it is widely used for non-cryptographic purposes, e.g.,
-as a fingerprint for TLS certificates.
+Unfortunately, completely disabling SHA-1 is not an option, since it
+is widely used for non-cryptographic purposes, e.g., as fingerprints
+of TLS certificates.
 
-As a package maintainer of a package that uses signatures, or as a
-local system administrator, I want to identify which processes on my
-system use SHA-1 digests in signature verification or creation so that
-I can make the necessary changes to a more modern digest
-algorithm. Once I made these changes, I want to be able to quickly
-confirm that the use of SHA-1 in digests has stopped.
+As the maintainer of a package that uses signatures, or as a local
+system administrator, I want to identify which processes on my system
+use SHA-1 digests when creating or verifying signatures, so that I can
+migrate them to a more modern digest algorithm. Once I have made these
+changes, I want to be able to quickly confirm that SHA-1 is no longer
+used in signatures.
 
 #### Identify Potentially Insecure Algorithms Used in an Organization
 
-The state of cryptography is constantly evolving, and new
-vulnerabilities are discovered over time. Organizations are required –
-sometimes legally, sometimes through standards with which they must
-comply – to ensure that their communication is secure, i.e., is still
-using algorithms considered secure by the cryptographic community
-and/or auditors.
+Cryptography is constantly evolving, and new vulnerabilities are
+discovered over time. Organizations are required – sometimes by law,
+sometimes by standards they must comply with – to ensure that their
+communication is secure, i.e., that it still uses algorithms
+considered secure by the cryptographic community and/or auditors.
 
-While RHEL’s [crypto-policies] allow setting rules as to which
-algorithms are allowed by default, applications and users can work
-around these defaults. No runtime monitoring of the actual behavior of
-processes on the system currently exists.
+While RHEL's [crypto-policies] allow setting rules for which
+algorithms are allowed by default, applications and users can
+circumvent these defaults. Currently, there is no runtime monitoring
+of the actual behavior of processes on the system.
 
-As an organization administrator, I want an overview of cryptographic
-algorithms used by machines under my control at runtime, so that I can
-identify which processes on which machines use old and potentially
-insecure protocols, potentially in violation of the configured crypto
-policy, and may need attention and migration to newer standards.
+As an organization administrator, I want an overview of the
+cryptographic algorithms used at runtime by the machines under my
+control, so that I can identify which processes on which machines use
+old and potentially insecure protocols, possibly in violation of the
+configured crypto policy, and may need attention or migration to newer
+standards.
 
-Red Hat Insights may be a potential front-end to show this data.
+Red Hat Insights could serve as a front end for presenting this data.
 
 ### Risks and Mitigations
 
-* We will modify the crypto libraries and force them to maintain the
-  compatibility of the [probes](#probes). As the cost of maintenance
-  can't be ignored, close and sustainable collaboration with the
+* We will modify cryptographic libraries, which will then need to
+  maintain compatibility of the [probes](#probes). As the maintenance
+  cost cannot be ignored, close and sustainable collaboration with the
   upstream communities is required.
 
-* We will need to be clear that this mechanism does not intentionally
-  face users to privacy risks. Although crypto operations are
+* We need to make clear that this mechanism does not intentionally
+  expose users to privacy risks. Although cryptographic operations are
   inherently applied to sensitive data, we should be mindful of any
-  correlations between users' data/actions and crypto operations.
+  correlation between users' data or actions and cryptographic
+  operations.
 
 ## Design Details
 
 ### Architecture
 
-The entire architecture consists of multiple components:
-- The cryptographic libraries with probes enabled
-- The collector agent which receives probe events and store them in a
-  primary log file as fast as possible
-- The log consumers that processes the primary log for further
-  processing, e.g., store them in a format Insights parsers can easily
-  handle
+The overall architecture consists of the following components:
+- Cryptographic libraries with probes enabled
+- A collector agent, which receives probe events and stores them in a
+  primary log file as quickly as possible
+- Log consumers, which process the primary log further, e.g., by
+  converting it into a format that Insights parsers can easily handle
 
 ### Collected information
 
-While the types of the information being collected may vary, they
-should be unambiguously classfied by granularity.  This proposal
-suggests using inseparable crypto operations as a unit of monitoring,
-such as [FIPS186-4] digital-signature operations and [SP800-90A]
-random number generation.  This aligns the [probes](#probes) to the
-existing FIPS140-3 [service indicator implementations] in the crypto
-libraries.
+While the types of information collected may vary, they should be
+unambiguously classified by granularity. This proposal uses
+indivisible cryptographic operations as the unit of monitoring, such
+as [FIPS186-4] digital signature operations and [SP800-90A] random
+number generation. This aligns the [probes](#probes) with the
+existing FIPS 140-3 [service indicator implementations] in the
+cryptographic libraries.
 
-Any higher level contextual information can be associated to those
-operations as a field in [structured logging].
+Any higher-level contextual information can be associated with these
+operations as fields in [structured logging].
 
 ### Probes
 
-For the agent to detect any entry to the crypto operations, the
-monitored programs and the dependent crypto libraries are
-instrumented. This can be typically done using [USDT] (user statically
+For the agent to detect entry into cryptographic operations, the
+monitored programs and the cryptographic libraries they depend on are
+instrumented. This is typically done using [USDT] (user statically
 defined tracepoints).
 
 ### Implementation notes
 
-There can be multiple ways of implementing the architecture.
+There are multiple ways to implement this architecture.
 
-The simplest form would be that the collector agent and log consumers
-are implemented as a single monolithic process and directly interact
-with the running processes through probe points. This approach may
-require the collector process to be always busy as it does multiple
-tasks at the same time.
+The simplest is to implement the collector agent and the log consumers
+as a single monolithic process that interacts directly with the
+running processes through probe points. This approach may keep the
+collector process constantly busy, as it performs multiple tasks at
+once.
 
-Adopting a multi-process architecture could avoid the issue: the
-collector agent could be woken up only when probe events arrive and
-the Insight consumer could be woken up only periodically.  This,
-however, could impose a cost of IPC between the components.  A
-publisher-subscriber model similar to [MQTT] (Message Queuing
-Telemetry Transport) could be beneficial to performance and
-flexibility.
+A multi-process architecture could avoid this issue: the collector
+agent would wake up only when probe events arrive, and the Insights
+consumer would wake up only periodically. This, however, could incur
+the cost of IPC between the components. A publish-subscribe model
+similar to [MQTT] (Message Queuing Telemetry Transport) could benefit
+both performance and flexibility.
 
 ### Prior art
 
-[Network Observability] uses a similar architecture for collecting and
-aggregating all the ingress and egress flows, using eBPF.
+[Network Observability] uses a similar eBPF-based architecture to
+collect and aggregate all ingress and egress flows.
 
 ### Test Plan
 
@@ -202,25 +207,24 @@ TBD
 
 ## Drawbacks
 
-Trust of the publisher: The architecture requires that the publishers
-are trustworthy, meaning that they always send correct information to
-the broker. This could be done using the standard Unix capabilities
-with SELinux labels to the publisher process, possibly with kernel
-[IMA] (integrity measurement architecture) support.
+Trust in publishers: the architecture requires publishers to be
+trustworthy, meaning that they always send correct information to the
+broker. This could be ensured by applying standard Unix capabilities
+and SELinux labels to the publisher process, possibly with support
+from the kernel [IMA] (Integrity Measurement Architecture).
 
 ## Alternatives
 
-Instead of imposing a multi-process architecture, it is possible to
-provide a set of CLI (command-line interface) tools that directly
-interact with the monitored programs and process the collected
-data. This setup, however, would be eventually more complex than the
-multi-process approach when any new requirements (e.g., new types of
-subscribers) arise.
+Instead of a multi-process architecture, it is possible to provide a
+set of CLI (command-line interface) tools that interact directly with
+the monitored programs and process the collected data. However, this
+setup would eventually become more complex than the multi-process
+approach as new requirements (e.g., new types of subscribers) arise.
 
-We could base on application level information, such as TLS key
-derivation, as a unit of events. This, however, makes it harder to
-maintain the compatibility of the probes as we need to support more
-applications/protocols.
+We could also use application-level information, such as TLS key
+derivation, as the unit of events. This, however, makes it harder to
+maintain compatibility of the probes as more applications and
+protocols need to be supported.
 
 [FIPS186-4]: https://csrc.nist.gov/publications/detail/fips/186/4/final
 [IMA]: https://sourceforge.net/p/linux-ima/wiki/Home/
