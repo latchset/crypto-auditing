@@ -9,9 +9,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "context": { "type": "string" },
-          "origin": { "type": "string" },
-          "command": { "type": "string" },
+          "context": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+          "origin": { "type": "string", "pattern": "^([0-9a-f]{2})*$" },
+          "executable": { "type": "string" },
           "start": { "type": "number" },
           "end": { "type": "number" },
           "events": {
@@ -21,14 +21,22 @@
             },
             "patternProperties": {
               "^[^:]+::.+$": {
-                "type": ["string", "number"]
+                "oneOf": [
+                  { "type": "integer" },
+                  { "type": "string" },
+                  {
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+                  }
+                ]
               }
             },
             "additionalProperties": true,
-            "requires": ["name"]
+            "required": ["name"]
           },
           "spans": { "$ref": "#/$defs/Span" }
-        }
+        },
+        "required": ["context", "origin", "executable", "start", "end", "events"]
       }
     }
   },
