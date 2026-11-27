@@ -93,6 +93,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(_) => {
                 if let Some(before) = now.checked_sub(config.event_window) {
                     root_contexts.extend(tracker.flush(before));
+                    // No more contexts can match --until
+                    if tracker.is_range_exhausted() {
+                        break;
+                    }
                 }
             }
             None => (),

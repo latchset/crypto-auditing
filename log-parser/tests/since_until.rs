@@ -135,3 +135,28 @@ fn test_event_window() {
         assert_eq!(output, expected, "event window {event_window}");
     }
 }
+
+#[test]
+fn test_event_window_until() {
+    let expected = fs::read(
+        fixture_dir()
+            .join("logs")
+            .join("since-until")
+            .join("until.json"),
+    )
+    .expect("should read since-until/until.json");
+    let expected = String::from_utf8(expected).expect("should be in valid UTF-8");
+
+    // The log is read only until the event window has passed the
+    // end of the range, which shouldn't affect the output
+    for event_window in [100, 10_000, 3_600_000] {
+        let output = run_query(
+            None,
+            Some(format!("{START_TIME} + 2 mins")),
+            Some(event_window),
+        )
+        .expect("crau-query should run");
+        let output = String::from_utf8(output).expect("should be in valid UTF-8");
+        assert_eq!(output, expected, "event window {event_window}");
+    }
+}
