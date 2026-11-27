@@ -32,7 +32,7 @@ struct crypto_auditing_data {
 
 struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
-  __uint(max_entries, 4096 /* one page */);
+  __uint(max_entries, 256 * 1024 /* 256 KB */);
 } ringbuf SEC(".maps");
 
 static __always_inline void
