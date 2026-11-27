@@ -133,7 +133,7 @@ scope tls {
 | `tls::protocol_version`       | uint16 | Negotiated TLS version                                                                           |
 | `tls::ciphersuite`            | uint16 | Negotiated ciphersuite (as in IANA [registry][iana-tls-ciphersuites])                            |
 | `tls::signature_algorithm`    | uint16 | Signature algorithm used in the handshake (as in IANA [registry][iana-tls-signature-algorithms]) |
-| `tls::group`                  | uint16 | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups])                  |
+| `tls::group`                  | uint16 | Groups used in the handshake (as in IANA [registry][iana-tls-supported-groups]), or 0 if the group is unknown (e.g., custom FFDHE parameters in TLS 1.2) |
 | `tls::extended_master_secret` | bool   | Whether extended_master_secret extension is negotiated                                           |
 
 ## SSH
